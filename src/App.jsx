@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Users, Plus, Trash2, Check, X, Copy, ChevronLeft, ChevronRight, Pencil, CalendarDays, TrendingUp, FileText, LogOut, Sparkles, Download } from 'lucide-react';
+import { supabase } from './supabaseClient.js';
 
 /* ---------------- constants ---------------- */
 
@@ -51,10 +52,11 @@ const SKILLS = [
 const TIER_LABELS = { 1: 'Needs Improvement', 2: 'Good', 3: 'Very Good', 4: 'Excellent' };
 
 const TIME_FILTERS = [
-  { id: 'all', label: 'All day', range: [360, 1380] },
-  { id: 'morning', label: 'Morning', range: [360, 720] },
-  { id: 'afternoon', label: 'Afternoon', range: [720, 1080] },
-  { id: 'evening', label: 'Evening', range: [1080, 1380] },
+  { id: 'all', label: 'All day', ranges: [[0, 1440]] },
+  { id: 'morning', label: 'Morning', ranges: [[360, 720]] },
+  { id: 'afternoon', label: 'Afternoon', ranges: [[720, 1080]] },
+  { id: 'evening', label: 'Evening', ranges: [[1080, 1320]] },
+  { id: 'graveyard', label: 'Graveyard', ranges: [[1320, 1440], [0, 360]] },
 ];
 
 const CEFR_LEVELS = [
@@ -288,7 +290,7 @@ function displaySlotLabel(dateStr, time, tzOption) {
 
 function generateSlots() {
   const slots = [];
-  for (let mins = 360; mins <= 1350; mins += 30) slots.push(minutesToHHMM(mins));
+  for (let mins = 0; mins <= 1410; mins += 30) slots.push(minutesToHHMM(mins));
   return slots;
 }
 const ALL_SLOTS = generateSlots();
@@ -312,16 +314,37 @@ function prettyDate(dateStr) {
 }
 function templateDate(dateStr) { const [y, m, d] = dateStr.split('-'); return `${m} ${d} ${y}`; }
 
+// "shared" data (students, bookings, payments, etc.) lives in Supabase so every device and
+// every person — teacher and students alike — reads and writes the exact same real data.
+// "non-shared" data (just which name this particular browser is currently logged in as)
+// stays in this browser's own localStorage, since that's meant to be per-device only.
 async function loadKey(key, fallback, shared = false) {
-  try { const res = await window.storage.get(key, shared); return res && res.value ? JSON.parse(res.value) : fallback; }
-  catch (e) { return fallback; }
+  if (!shared) {
+    try { const raw = window.localStorage.getItem(`esl_${key}`); return raw ? JSON.parse(raw) : fallback; }
+    catch (e) { return fallback; }
+  }
+  try {
+    const { data, error } = await supabase.from('app_data').select('value').eq('key', key).maybeSingle();
+    if (error || !data) return fallback;
+    return data.value ?? fallback;
+  } catch (e) { console.error('Supabase load failed', key, e); return fallback; }
 }
 async function saveKey(key, value, shared = false) {
-  try { await window.storage.set(key, JSON.stringify(value), shared); }
-  catch (e) { console.error('storage save failed', key, e); }
+  if (!shared) {
+    try { window.localStorage.setItem(`esl_${key}`, JSON.stringify(value)); } catch (e) { /* ignore */ }
+    return;
+  }
+  try {
+    const { error } = await supabase.from('app_data').upsert({ key, value, updated_at: new Date().toISOString() });
+    if (error) console.error('Supabase save failed', key, error);
+  } catch (e) { console.error('Supabase save failed', key, e); }
 }
 async function deleteKey(key, shared = false) {
-  try { await window.storage.delete(key, shared); } catch (e) { /* ignore */ }
+  if (!shared) {
+    try { window.localStorage.removeItem(`esl_${key}`); } catch (e) { /* ignore */ }
+    return;
+  }
+  try { await supabase.from('app_data').delete().eq('key', key); } catch (e) { /* ignore */ }
 }
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -640,6 +663,31 @@ export default function ESLConsole() {
     })();
   }, []);
 
+  // Everyone (teacher + every student) is reading/writing the same Supabase rows, so poll
+  // periodically to pick up whatever anyone else just booked, paid, or edited. This is a simple
+  // "check every few seconds" approach rather than true real-time push — good enough for a small
+  // tutoring practice; if bookings ever feel laggy, Supabase's Realtime feature could replace this.
+  useEffect(() => {
+    if (!loaded) return;
+    const interval = setInterval(async () => {
+      const [s, c, a, p, fp, st] = await Promise.all([
+        loadKey('students', null, true),
+        loadKey('classLog', null, true),
+        loadKey('assessments', null, true),
+        loadKey('payments', null, true),
+        loadKey('familyPools', null, true),
+        loadKey('settings', null, true),
+      ]);
+      if (s) setStudents(s);
+      if (c) setClassLog(c);
+      if (a) setAssessments(a);
+      if (p) setPayments(p);
+      if (fp) setFamilyPools(fp);
+      if (st) setSettings(st);
+    }, 12000);
+    return () => clearInterval(interval);
+  }, [loaded]);
+
   useEffect(() => {
     if (!loaded) return;
     if (skipSave.current) { skipSave.current = false; return; }
@@ -653,7 +701,10 @@ export default function ESLConsole() {
   const studentById = useMemo(() => { const m = {}; students.forEach((s) => (m[s.id] = s)); return m; }, [students]);
   const filteredSlots = useMemo(() => {
     const f = TIME_FILTERS.find((x) => x.id === timeFilter);
-    return ALL_SLOTS.filter((t) => { const m = hhmmToMinutes(t); return m >= f.range[0] && m < f.range[1]; });
+    return ALL_SLOTS.filter((t) => {
+      const m = hhmmToMinutes(t);
+      return f.ranges.some(([start, end]) => m >= start && m < end);
+    });
   }, [timeFilter]);
 
   const getEntryAt = (date, time) => (classLog[date] || []).find((e) => e.chinaTime === time);
