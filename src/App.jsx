@@ -55,8 +55,8 @@ const TIME_FILTERS = [
   { id: 'all', label: 'All day', ranges: [[0, 1440]] },
   { id: 'morning', label: 'Morning', ranges: [[360, 720]] },
   { id: 'afternoon', label: 'Afternoon', ranges: [[720, 1080]] },
-  { id: 'evening', label: 'Evening', ranges: [[1080, 1320]] },
-  { id: 'graveyard', label: 'Graveyard', ranges: [[1320, 1440], [0, 360]] },
+  { id: 'evening', label: 'Evening', ranges: [[1080, 1440]] },
+  { id: 'graveyard', label: 'Graveyard', ranges: [[0, 360]] },
 ];
 
 const CEFR_LEVELS = [
@@ -280,12 +280,28 @@ function convertAnchorTime(dateStr, timeStr, targetTz) {
   const utcDate = new Date(Date.UTC(y, m - 1, d, hh - 8, mm || 0));
   return new Intl.DateTimeFormat('en-GB', { timeZone: targetTz, hour: '2-digit', minute: '2-digit', hour12: false }).format(utcDate);
 }
+// Israel/Poland are far enough behind PH time that some slots land on a different calendar day
+// for them — this figures out which local date a PH-anchored slot actually falls on, so we can
+// flag it instead of just silently showing a time that looks "out of order" for that day.
+function convertAnchorDate(dateStr, timeStr, targetTz) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [hh, mm] = timeStr.split(':').map(Number);
+  const utcDate = new Date(Date.UTC(y, m - 1, d, hh - 8, mm || 0));
+  return new Intl.DateTimeFormat('en-CA', { timeZone: targetTz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(utcDate);
+}
 function displaySlotLabel(dateStr, time, tzOption) {
   if (tzOption.id === 'ph') return slotRangeLabel(time);
   const start = convertAnchorTime(dateStr, time, tzOption.tz);
   const [h, m] = start.split(':').map(Number);
   const endMins = h * 60 + m + 25;
-  return `${displayTime(start)}-${displayTime(minutesToHHMM(((endMins % 1440) + 1440) % 1440))}`;
+  const label = `${displayTime(start)}-${displayTime(minutesToHHMM(((endMins % 1440) + 1440) % 1440))}`;
+  const localDateStr = convertAnchorDate(dateStr, time, tzOption.tz);
+  if (localDateStr !== dateStr) {
+    const [ly, lm, ld] = localDateStr.split('-').map(Number);
+    const weekday = new Date(ly, lm - 1, ld).toLocaleDateString('en-US', { weekday: 'short' });
+    return `${label} (${weekday})`;
+  }
+  return label;
 }
 
 function generateSlots() {
@@ -1050,6 +1066,48 @@ function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, s
   );
 }
 
+function StudentPicker({ students, value, onChange, placeholder = 'Search student…' }) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const selected = students.find((s) => s.id === value);
+
+  useEffect(() => {
+    function handleClick(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filtered = students.filter((s) => s.name.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div className="relative" ref={wrapRef}>
+      <input
+        value={open ? query : (selected ? selected.name : '')}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => { setQuery(''); setOpen(true); }}
+        placeholder={placeholder}
+        className="w-full rounded-md px-2 py-1.5 text-sm outline-none"
+        style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }}
+      />
+      {open && (
+        <div className="absolute z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-md shadow-lg" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}` }}>
+          {value && (
+            <div onClick={() => { onChange(''); setQuery(''); setOpen(false); }} className="px-2 py-1.5 text-xs cursor-pointer" style={{ color: MUTED, borderBottom: `1px solid ${BORDER}` }}>✕ Clear selection</div>
+          )}
+          {filtered.length === 0 && <div className="px-2 py-1.5 text-xs" style={{ color: MUTED }}>No matches</div>}
+          {filtered.map((s) => (
+            <div key={s.id} onClick={() => { onChange(s.id); setQuery(''); setOpen(false); }}
+              className="px-2 py-1.5 text-sm cursor-pointer" style={{ color: TEXT, backgroundColor: s.id === value ? PAPER_LIGHTER : 'transparent' }}>
+              {s.name}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentById, students, setSlotModal, batchBookEntries, isTeacher, myStudentId }) {
   const [bookAs, setBookAs] = useState('');
   const [selfSelecting, setSelfSelecting] = useState(false);
@@ -1090,10 +1148,9 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
         {isTeacher ? (
           <>
             <span className="text-sm" style={{ color: MUTED }}>Book as:</span>
-            <select value={bookAs} onChange={(e) => { setBookAs(e.target.value); clearSelection(); }} className="rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }}>
-              <option value="">— pick a student to start selecting slots —</option>
-              {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+            <div className="w-64">
+              <StudentPicker students={students} value={bookAs} onChange={(id) => { setBookAs(id); clearSelection(); }} placeholder="Search student to book as…" />
+            </div>
           </>
         ) : (
           <Btn variant={selfSelecting ? 'accent' : 'default'} onClick={() => { setSelfSelecting(!selfSelecting); clearSelection(); }}>
@@ -1201,10 +1258,9 @@ function SlotModal({ ctx, isTeacher, myStudentId, displayTz, compareTz, students
       {!student ? (
         <div>
           <div className="text-sm mb-2" style={{ color: MUTED }}>Book a student into this slot</div>
-          <select value={pick} onChange={(e) => setPick(e.target.value)} className="w-full rounded-md px-2 py-1.5 text-sm mb-3 outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }}>
-            <option value="">Select student…</option>
-            {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          <div className="mb-3">
+            <StudentPicker students={students} value={pick} onChange={setPick} placeholder="Search student…" />
+          </div>
           <Btn variant="accent" disabled={!pick} onClick={() => onBookDay(pick)}>Book lesson</Btn>
         </div>
       ) : (
@@ -1434,6 +1490,8 @@ function StudentsTab({ students, assessments, familyPools, addStudent, updateStu
   const [form, setForm] = useState({ name: '', category: 'company', rate: '', lessonsRemaining: '' });
   const [profileFor, setProfileFor] = useState(null);
   const [showPools, setShowPools] = useState(false);
+  const [rosterQuery, setRosterQuery] = useState('');
+  const visibleStudents = students.filter((s) => s.name.toLowerCase().includes(rosterQuery.toLowerCase()));
 
   const submit = () => {
     if (!form.name.trim()) return;
@@ -1464,11 +1522,18 @@ function StudentsTab({ students, assessments, familyPools, addStudent, updateStu
         {showPools && <FamilyPoolsPanel familyPools={familyPools} students={students} addFamilyPool={addFamilyPool} updateFamilyPool={updateFamilyPool} />}
       </div>
 
+      <div className="mb-3 flex items-center gap-2">
+        <input value={rosterQuery} onChange={(e) => setRosterQuery(e.target.value)} placeholder="Search students by name…"
+          className="w-full max-w-xs rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }} />
+        {rosterQuery && <span className="text-xs" style={{ color: MUTED }}>{visibleStudents.length} of {students.length}</span>}
+      </div>
+
       <div className="space-y-2">
-        {students.map((s) => {
+        {visibleStudents.map((s) => {
           const latest = (assessments[s.id] || [])[0];
           return <StudentRow key={s.id} student={s} level={latest?.level} effectiveLessons={getEffectiveLessons(s)} updateStudent={updateStudent} deleteStudent={deleteStudent} onProfile={() => setProfileFor(s.id)} />;
         })}
+        {rosterQuery && visibleStudents.length === 0 && <p className="text-sm" style={{ color: MUTED }}>No students match "{rosterQuery}".</p>}
       </div>
       {profileFor && (
         <StudentProfileModal student={students.find((s) => s.id === profileFor)} latestAssessment={(assessments[profileFor] || [])[0]}
@@ -1633,9 +1698,9 @@ function ProgressTab({ students, classLog, assessments, addAssessment, restricte
   return (
     <div>
       {!restrictedStudentId && (
-        <select value={studentId} onChange={(e) => setStudentId(e.target.value)} className="rounded-md px-3 py-2 text-sm outline-none mb-5" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}`, color: TEXT }}>
-          {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        <div className="mb-5 max-w-xs">
+          <StudentPicker students={students} value={studentId} onChange={setStudentId} placeholder="Search student…" />
+        </div>
       )}
 
       <div className="rounded-xl p-4 mb-5" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}` }}>
@@ -1780,10 +1845,9 @@ function BillingTab({ students, classLog, studentById, payments, addPayment, set
       <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}` }}>
         <div className="text-sm font-medium mb-3">Record a payment</div>
         <div className="grid sm:grid-cols-5 gap-2">
-          <select value={payForm.studentId} onChange={(e) => setPayForm({ ...payForm, studentId: e.target.value })} className="rounded-md px-2 py-1.5 text-sm outline-none sm:col-span-2" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }}>
-            <option value="">Select student…</option>
-            {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          <div className="sm:col-span-2">
+            <StudentPicker students={students} value={payForm.studentId} onChange={(id) => setPayForm({ ...payForm, studentId: id })} placeholder="Search student…" />
+          </div>
           <input placeholder="Amount ₱" type="number" value={payForm.amount} onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })} className="rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }} />
           <input placeholder="Lessons purchased" type="number" value={payForm.lessonsPurchased} onChange={(e) => setPayForm({ ...payForm, lessonsPurchased: e.target.value })} className="rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }} />
           <input placeholder="Note (optional)" value={payForm.note} onChange={(e) => setPayForm({ ...payForm, note: e.target.value })} className="rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }} />
