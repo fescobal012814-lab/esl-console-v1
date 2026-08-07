@@ -1798,32 +1798,41 @@ function ProgressTab({ students, classLog, assessments, addAssessment, restricte
 /* ---------------- Billing tab ---------------- */
 
 function BillingTab({ students, classLog, studentById, payments, addPayment, settings, updateSettings, clearStudents, clearBookings, clearPayments, clearAssessments, clearFamilyPools, clearEverything }) {
-  const [month, setMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`; });
+  const today = toDateStr(new Date());
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const [rangeStart, setRangeStart] = useState(monthStart);
+  const [rangeEnd, setRangeEnd] = useState(today);
+  const [earningsCategory, setEarningsCategory] = useState('all');
   const [receiptFor, setReceiptFor] = useState(null);
   const [payForm, setPayForm] = useState({ studentId: '', amount: '', lessonsPurchased: '', note: '' });
   const [showSettings, setShowSettings] = useState(false);
   const [showDanger, setShowDanger] = useState(false);
 
-  const monthEntries = useMemo(() => {
+  const rangeEntries = useMemo(() => {
     const result = {};
     Object.entries(classLog).forEach(([date, list]) => {
-      if (!date.startsWith(month)) return;
+      if (date < rangeStart || date > rangeEnd) return;
       list.forEach((e) => {
         if (e.status !== 'finished' && e.status !== 'absent') return;
+        const s = studentById[e.studentId];
+        if (earningsCategory !== 'all' && (!s || s.category !== earningsCategory)) return;
         result[e.studentId] = result[e.studentId] || [];
         result[e.studentId].push(e);
       });
     });
     Object.values(result).forEach((list) => list.sort((a, b) => a.date.localeCompare(b.date)));
     return result;
-  }, [classLog, month]);
+  }, [classLog, rangeStart, rangeEnd, earningsCategory, studentById]);
 
   const summaryRows = students.map((s) => {
-    const list = monthEntries[s.id] || [];
+    const list = rangeEntries[s.id] || [];
     const rate = s.rate || 0;
     const total = list.reduce((sum, e) => sum + (e.status === 'finished' ? rate : rate * 0.5), 0);
     return { student: s, count: list.length, total };
   }).filter((r) => r.count > 0);
+
+  const grandTotal = summaryRows.reduce((sum, r) => sum + r.total, 0);
+  const grandCount = summaryRows.reduce((sum, r) => sum + r.count, 0);
 
   const submitPayment = () => {
     if (!payForm.studentId || !payForm.amount) return;
@@ -1903,10 +1912,31 @@ function BillingTab({ students, classLog, studentById, payments, addPayment, set
         </div>
       </div>
 
-      <div className="mb-2 text-sm font-medium">Monthly earnings overview (from Finished/Absent lessons)</div>
-      <div className="flex items-center gap-2 mb-3">
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}`, color: TEXT }} />
+      <div className="mb-2 text-sm font-medium">Earnings by date range (from Finished/Absent lessons)</div>
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <label className="flex items-center gap-1.5 text-xs" style={{ color: MUTED }}>From
+          <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} className="rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}`, color: TEXT }} />
+        </label>
+        <label className="flex items-center gap-1.5 text-xs" style={{ color: MUTED }}>To
+          <input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} className="rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}`, color: TEXT }} />
+        </label>
+        <select value={earningsCategory} onChange={(e) => setEarningsCategory(e.target.value)} className="rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}`, color: TEXT }}>
+          <option value="all">All categories</option>
+          {Object.entries(CATEGORY_META).map(([key, meta]) => <option key={key} value={key}>{meta.label} only</option>)}
+        </select>
       </div>
+
+      <div className="rounded-xl p-4 mb-3 flex flex-wrap items-center gap-6" style={{ backgroundColor: PAPER_LIGHT, border: `1px solid ${ACCENT}55` }}>
+        <div>
+          <div className="text-xs uppercase tracking-wide" style={{ color: MUTED }}>Total earned</div>
+          <div className="text-2xl font-semibold" style={{ color: ACCENT }}>₱{grandTotal.toFixed(2)}</div>
+        </div>
+        <div>
+          <div className="text-xs uppercase tracking-wide" style={{ color: MUTED }}>Classes counted</div>
+          <div className="text-2xl font-semibold">{grandCount}</div>
+        </div>
+      </div>
+
       <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
         {summaryRows.map((r) => (
           <div key={r.student.id} className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ backgroundColor: PAPER, borderTop: `1px solid ${BORDER}` }}>
@@ -1916,7 +1946,7 @@ function BillingTab({ students, classLog, studentById, payments, addPayment, set
             <span className="font-mono" style={{ color: ACCENT }}>₱{r.total.toFixed(2)}</span>
           </div>
         ))}
-        {summaryRows.length === 0 && <div className="px-4 py-10 text-center text-sm" style={{ color: MUTED }}>No finished or charged lessons this month yet.</div>}
+        {summaryRows.length === 0 && <div className="px-4 py-10 text-center text-sm" style={{ color: MUTED }}>No finished or charged lessons in this range yet.</div>}
       </div>
 
       <div className="mt-6">
