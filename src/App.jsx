@@ -535,9 +535,9 @@ function Btn({ children, onClick, variant = 'default', className = '', title, di
   return <button title={title} disabled={disabled} onClick={onClick} className={base + ' ' + className} style={styles[variant]}>{children}</button>;
 }
 
-function Modal({ children, onClose, wide }) {
+function Modal({ children, onClose, wide, persistent }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: '#000000aa', overscrollBehavior: 'contain' }} onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: '#000000aa', overscrollBehavior: 'contain' }} onClick={persistent ? undefined : onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
         className={`w-full ${wide ? 'max-w-2xl' : 'max-w-sm'} rounded-2xl p-5`}
@@ -838,6 +838,22 @@ export default function ESLConsole() {
     });
   };
 
+  // Danger Zone — deliberately simple resets. Clearing students while keeping bookings/payments
+  // around can leave those pointing at a student that no longer exists, so the UI warns about that;
+  // "Clear everything" avoids the issue entirely by wiping all of it together.
+  const clearStudents = () => setStudents([]);
+  const clearBookings = () => setClassLog({});
+  const clearPayments = () => setPayments({});
+  const clearAssessments = () => setAssessments({});
+  const clearFamilyPools = () => setFamilyPools([]);
+  const clearEverything = () => {
+    setStudents([]);
+    setClassLog({});
+    setPayments({});
+    setAssessments({});
+    setFamilyPools([]);
+  };
+
   const handleSetTeacher = async (newPasscode) => {
     if (newPasscode) {
       const next = { ...(settings || {}), teacherPasscode: newPasscode };
@@ -933,7 +949,8 @@ export default function ESLConsole() {
             restrictedStudentId={isTeacher ? null : myStudentId} />
         )}
         {activeTab === 'billing' && isTeacher && (
-          <BillingTab students={students} classLog={classLog} studentById={studentById} payments={payments} addPayment={addPayment} settings={settings} updateSettings={updateSettings} />
+          <BillingTab students={students} classLog={classLog} studentById={studentById} payments={payments} addPayment={addPayment} settings={settings} updateSettings={updateSettings}
+            clearStudents={clearStudents} clearBookings={clearBookings} clearPayments={clearPayments} clearAssessments={clearAssessments} clearFamilyPools={clearFamilyPools} clearEverything={clearEverything} />
         )}
         {activeTab === 'reports' && isTeacher && <ReportsTab classLog={classLog} studentById={studentById} />}
       </div>
@@ -1098,8 +1115,11 @@ function StudentPicker({ students, value, onChange, placeholder = 'Search studen
           {filtered.length === 0 && <div className="px-2 py-1.5 text-xs" style={{ color: MUTED }}>No matches</div>}
           {filtered.map((s) => (
             <div key={s.id} onClick={() => { onChange(s.id); setQuery(''); setOpen(false); }}
-              className="px-2 py-1.5 text-sm cursor-pointer" style={{ color: TEXT, backgroundColor: s.id === value ? PAPER_LIGHTER : 'transparent' }}>
-              {s.name}
+              className="px-2 py-1.5 text-sm cursor-pointer flex items-center gap-2" style={{ color: TEXT, backgroundColor: s.id === value ? PAPER_LIGHTER : 'transparent' }}>
+              <span className="inline-block rounded-full shrink-0" style={{ width: 8, height: 8, backgroundColor: s.color || MUTED }} />
+              <span className="flex-1">{s.name}</span>
+              <span className="text-xs shrink-0" style={{ color: CATEGORY_META[s.category]?.color || MUTED }}>{CATEGORY_META[s.category]?.label}</span>
+              {s.id === value && <Check size={14} style={{ color: ACCENT }} className="shrink-0" />}
             </div>
           ))}
         </div>
@@ -1373,10 +1393,15 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
   }
 
   return (
-    <Modal onClose={onClose} wide>
-      <div className="mb-4">
-        <div className="text-xs uppercase tracking-wide mb-0.5" style={{ color: MUTED }}>Feedback</div>
-        <div className="font-medium text-lg">{student?.name} — {templateDate(entry.date)}</div>
+    <Modal onClose={onClose} wide persistent>
+      <div className="mb-4 flex items-start justify-between">
+        <div>
+          <div className="text-xs uppercase tracking-wide mb-0.5" style={{ color: MUTED }}>Feedback</div>
+          <div className="font-medium text-lg">{student?.name} — {templateDate(entry.date)}</div>
+        </div>
+        <button onClick={onClose} className="rounded-md p-1.5 shrink-0" style={{ color: MUTED, border: `1px solid ${BORDER}` }} title="Close">
+          <X size={16} />
+        </button>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-3 mb-4">
@@ -1772,11 +1797,12 @@ function ProgressTab({ students, classLog, assessments, addAssessment, restricte
 
 /* ---------------- Billing tab ---------------- */
 
-function BillingTab({ students, classLog, studentById, payments, addPayment, settings, updateSettings }) {
+function BillingTab({ students, classLog, studentById, payments, addPayment, settings, updateSettings, clearStudents, clearBookings, clearPayments, clearAssessments, clearFamilyPools, clearEverything }) {
   const [month, setMonth] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`; });
   const [receiptFor, setReceiptFor] = useState(null);
   const [payForm, setPayForm] = useState({ studentId: '', amount: '', lessonsPurchased: '', note: '' });
   const [showSettings, setShowSettings] = useState(false);
+  const [showDanger, setShowDanger] = useState(false);
 
   const monthEntries = useMemo(() => {
     const result = {};
@@ -1891,6 +1917,28 @@ function BillingTab({ students, classLog, studentById, payments, addPayment, set
           </div>
         ))}
         {summaryRows.length === 0 && <div className="px-4 py-10 text-center text-sm" style={{ color: MUTED }}>No finished or charged lessons this month yet.</div>}
+      </div>
+
+      <div className="mt-6">
+        <button onClick={() => setShowDanger(!showDanger)} className="text-sm font-medium" style={{ color: RED }}>{showDanger ? '▾' : '▸'} Danger Zone (clear data)</button>
+        {showDanger && (
+          <div className="mt-2 rounded-xl p-4 space-y-3" style={{ backgroundColor: PAPER, border: `1px solid ${RED}` }}>
+            <p className="text-xs" style={{ color: MUTED }}>These can't be undone. Clearing just students (while keeping bookings/payments) can leave old entries pointing at a student that no longer exists — if you're starting fresh, "Clear everything" avoids that.</p>
+            <div className="flex flex-wrap gap-2">
+              <Btn variant="danger" onClick={() => { if (window.confirm('Delete every booking/schedule entry? This cannot be undone.')) clearBookings(); }}>Clear all bookings</Btn>
+              <Btn variant="danger" onClick={() => { if (window.confirm('Delete every payment record? This cannot be undone.')) clearPayments(); }}>Clear all payments</Btn>
+              <Btn variant="danger" onClick={() => { if (window.confirm('Delete every assessment record? This cannot be undone.')) clearAssessments(); }}>Clear all assessments</Btn>
+              <Btn variant="danger" onClick={() => { if (window.confirm('Delete every family pool? This cannot be undone.')) clearFamilyPools(); }}>Clear family pools</Btn>
+              <Btn variant="danger" onClick={() => { if (window.confirm('Delete every student profile? This cannot be undone, and bookings/payments already tied to them will look broken until you also clear those.')) clearStudents(); }}>Clear all students</Btn>
+            </div>
+            <div className="pt-2" style={{ borderTop: `1px solid ${BORDER}` }}>
+              <Btn variant="danger" onClick={() => {
+                const typed = window.prompt('This deletes EVERYTHING — students, bookings, payments, assessments, family pools — for everyone using this site. Type DELETE to confirm.');
+                if (typed === 'DELETE') clearEverything();
+              }}>⚠ Clear everything and start fresh</Btn>
+            </div>
+          </div>
+        )}
       </div>
 
       {receiptFor && (
