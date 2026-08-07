@@ -1059,7 +1059,7 @@ function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, s
         return (
           <div key={time} onClick={() => setSlotModal({ date, time })}
             className="flex items-center gap-3 px-4 py-2 cursor-pointer"
-            style={{ backgroundColor: entry ? PAPER_LIGHTER : PAPER, borderTop: `1px solid ${BORDER}` }}>
+            style={{ backgroundColor: isMine ? '#1E3A2A' : (entry ? PAPER_LIGHTER : PAPER), borderTop: `1px solid ${BORDER}`, borderLeft: isMine ? '3px solid #7FCB7F' : '3px solid transparent' }}>
             <div className="w-24 font-mono text-sm">{displaySlotLabel(date, time, displayTz)}</div>
             {compareTz && (
               <div className="w-24 font-mono text-xs" style={{ color: MUTED }}>
@@ -1069,7 +1069,8 @@ function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, s
             {entry ? (
               <>
                 {!hideName && student && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: student.color }} />}
-                <span className="font-medium">{hideName ? 'Booked' : (student ? student.name : 'Unknown')}</span>
+                {isMine && <Check size={14} style={{ color: '#7FCB7F' }} />}
+                <span className="font-medium" style={isMine ? { color: '#7FCB7F' } : undefined}>{hideName ? 'Booked' : (student ? student.name : 'Unknown')}</span>
                 {!hideName && cat && <Pill color={cat.color}>{cat.label}</Pill>}
                 {isTeacher && <Pill color={STATUS_META[entry.status].color}>{STATUS_META[entry.status].label}</Pill>}
               </>
@@ -1210,13 +1211,18 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
                 const isSelected = selected.has(cellKey(date, time));
                 return (
                   <div key={date} onClick={() => toggleCell(date, time)}
-                    className="px-1.5 py-1.5 text-xs cursor-pointer flex items-center justify-center text-center"
+                    className="px-1.5 py-1.5 text-xs cursor-pointer flex items-center justify-center text-center gap-1"
                     style={{
-                      backgroundColor: isSelected ? ACCENT + '33' : (student ? student.color + '22' : 'transparent'),
-                      borderLeft: `1px solid ${BORDER}`,
+                      backgroundColor: isSelected ? ACCENT + '33' : (isMine ? '#1E3A2A' : (student ? student.color + '22' : 'transparent')),
+                      borderLeft: isMine ? '2px solid #7FCB7F' : `1px solid ${BORDER}`,
                       outline: isSelected ? `1px solid ${ACCENT}` : 'none',
                     }}>
-                    {student ? <span>{hideName ? 'Booked' : student.name}</span> : isSelected ? <span style={{ color: ACCENT }}>✓</span> : <span style={{ color: BORDER }}>·</span>}
+                    {student ? (
+                      <span className="flex items-center gap-1" style={isMine ? { color: '#7FCB7F', fontWeight: 600 } : undefined}>
+                        {isMine && <Check size={12} />}
+                        {hideName ? 'Booked' : student.name}
+                      </span>
+                    ) : isSelected ? <span style={{ color: ACCENT }}>✓</span> : <span style={{ color: BORDER }}>·</span>}
                   </div>
                 );
               })}
