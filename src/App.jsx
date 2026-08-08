@@ -551,7 +551,7 @@ function Modal({ children, onClose, wide, persistent }) {
 
 /* ---------------- Role gate ---------------- */
 
-function RoleGate({ students, settings, onSetTeacher, onSetStudent }) {
+function RoleGate({ students, settings, onSetTeacher, onSetStudent, onSetRepresentative }) {
   const [mode, setMode] = useState(null);
   const [passcodeInput, setPasscodeInput] = useState('');
   const [newPasscode, setNewPasscode] = useState('');
@@ -559,6 +559,8 @@ function RoleGate({ students, settings, onSetTeacher, onSetStudent }) {
   const [pinStage, setPinStage] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [repPasscodeInput, setRepPasscodeInput] = useState('');
+  const [repError, setRepError] = useState('');
   const [error, setError] = useState('');
   const isFirstRun = !settings || !settings.teacherPasscode;
   const bookable = students.filter((s) => s.category !== 'company');
@@ -587,6 +589,7 @@ function RoleGate({ students, settings, onSetTeacher, onSetStudent }) {
           <div className="flex flex-col gap-2">
             <Btn variant="accent" onClick={() => setMode('teacher')}>I'm the teacher</Btn>
             <Btn onClick={() => setMode('student')}>I'm a student</Btn>
+            <Btn onClick={() => setMode('representative')}>I'm a company representative</Btn>
           </div>
         )}
 
@@ -630,7 +633,21 @@ function RoleGate({ students, settings, onSetTeacher, onSetStudent }) {
           </div>
         )}
 
-        {mode && <button onClick={() => { setMode(null); setError(''); setPinStage(false); setPinInput(''); setPinError(''); setStudentPick(''); }} className="text-xs mt-4" style={{ color: MUTED }}>← back</button>}
+        {mode === 'representative' && (
+          !settings?.repPasscode ? (
+            <p className="text-sm" style={{ color: MUTED }}>Representative access hasn't been set up yet — ask your teacher to enable it in the Billing tab's settings.</p>
+          ) : (
+            <div>
+              <p className="text-xs mb-2" style={{ color: MUTED }}>Enter the company representative passcode.</p>
+              <input type="password" value={repPasscodeInput} onChange={(e) => setRepPasscodeInput(e.target.value)} placeholder="Passcode"
+                className="w-full rounded-md px-2 py-1.5 text-sm outline-none mb-2" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }} />
+              {repError && <p className="text-xs mb-2" style={{ color: RED }}>{repError}</p>}
+              <Btn variant="accent" onClick={() => { if (repPasscodeInput === settings.repPasscode) onSetRepresentative(); else setRepError('Wrong passcode'); }}>Enter</Btn>
+            </div>
+          )
+        )}
+
+        {mode && <button onClick={() => { setMode(null); setError(''); setPinStage(false); setPinInput(''); setPinError(''); setStudentPick(''); setRepPasscodeInput(''); setRepError(''); }} className="text-xs mt-4" style={{ color: MUTED }}>← back</button>}
       </div>
     </div>
   );
@@ -869,6 +886,11 @@ export default function ESLConsole() {
     setIdentity(id);
     await saveKey('myIdentity', id, false);
   };
+  const handleSetRepresentative = async () => {
+    const id = { role: 'representative' };
+    setIdentity(id);
+    await saveKey('myIdentity', id, false);
+  };
   const handleSwitchUser = async () => {
     await deleteKey('myIdentity', false);
     setIdentity(null);
@@ -879,11 +901,13 @@ export default function ESLConsole() {
     return <div className="min-h-screen w-full" style={{ backgroundColor: INK }} />;
   }
   if (identity === null) {
-    return <RoleGate students={students} settings={settings} onSetTeacher={handleSetTeacher} onSetStudent={handleSetStudent} />;
+    return <RoleGate students={students} settings={settings} onSetTeacher={handleSetTeacher} onSetStudent={handleSetStudent} onSetRepresentative={handleSetRepresentative} />;
   }
 
   const isTeacher = identity.role === 'teacher';
+  const isRep = identity.role === 'representative';
   const myStudentId = identity.studentId;
+  const companyStudents = useMemo(() => students.filter((s) => s.category === 'company'), [students]);
   const tabs = isTeacher
     ? [
         { id: 'schedule', label: 'Schedule', icon: CalendarDays },
@@ -892,6 +916,8 @@ export default function ESLConsole() {
         { id: 'billing', label: 'Billing', icon: FileText },
         { id: 'reports', label: 'Reports', icon: Download },
       ]
+    : isRep
+    ? [{ id: 'schedule', label: 'Schedule', icon: CalendarDays }]
     : [
         { id: 'schedule', label: 'Schedule', icon: CalendarDays },
         { id: 'progress', label: 'My Progress', icon: TrendingUp },
@@ -907,7 +933,7 @@ export default function ESLConsole() {
         </div>
 
         <div className="flex items-center justify-between mb-6">
-          <Pill color={isTeacher ? ACCENT : '#8FC98F'}>{isTeacher ? 'Teacher' : `Student · ${studentById[myStudentId]?.name || ''}`}</Pill>
+          <Pill color={isTeacher ? ACCENT : isRep ? '#7C9FD9' : '#8FC98F'}>{isTeacher ? 'Teacher' : isRep ? 'Company Representative' : `Student · ${studentById[myStudentId]?.name || ''}`}</Pill>
           <button onClick={handleSwitchUser} className="flex items-center gap-1 text-xs" style={{ color: MUTED }}><LogOut size={12} /> Switch user</button>
         </div>
 
@@ -925,7 +951,7 @@ export default function ESLConsole() {
 
         {activeTab === 'schedule' && (
           <ScheduleTab
-            isTeacher={isTeacher} myStudentId={myStudentId} myStudent={studentById[myStudentId]}
+            isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} myStudent={studentById[myStudentId]} companyStudents={companyStudents}
             view={view} setView={setView}
             selectedDate={selectedDate} setSelectedDate={setSelectedDate}
             timeFilter={timeFilter} setTimeFilter={setTimeFilter}
@@ -944,7 +970,7 @@ export default function ESLConsole() {
             addStudent={addStudent} updateStudent={updateStudent} deleteStudent={deleteStudent}
             addFamilyPool={addFamilyPool} updateFamilyPool={updateFamilyPool} getEffectiveLessons={getEffectiveLessons} />
         )}
-        {activeTab === 'progress' && (
+        {activeTab === 'progress' && !isRep && (
           <ProgressTab students={students} classLog={classLog} assessments={assessments} addAssessment={addAssessment}
             restrictedStudentId={isTeacher ? null : myStudentId} />
         )}
@@ -957,9 +983,9 @@ export default function ESLConsole() {
 
       {slotModal && (
         <SlotModal
-          ctx={slotModal} isTeacher={isTeacher} myStudentId={myStudentId}
-          displayTz={isTeacher ? displayTz : (DISPLAY_TZ_OPTIONS.find((o) => o.id === (studentById[myStudentId]?.homeTz || 'ph')) || DISPLAY_TZ_OPTIONS[0])}
-          compareTz={isTeacher ? compareTz : null}
+          ctx={slotModal} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} companyStudents={companyStudents}
+          displayTz={(isTeacher || isRep) ? displayTz : (DISPLAY_TZ_OPTIONS.find((o) => o.id === (studentById[myStudentId]?.homeTz || 'ph')) || DISPLAY_TZ_OPTIONS[0])}
+          compareTz={(isTeacher || isRep) ? compareTz : null}
           students={students} studentById={studentById}
           entry={getEntryAt(slotModal.date, slotModal.time)}
           onClose={() => setSlotModal(null)}
@@ -988,14 +1014,15 @@ export default function ESLConsole() {
 
 /* ---------------- Schedule tab ---------------- */
 
-function ScheduleTab({ isTeacher, myStudentId, myStudent, view, setView, selectedDate, setSelectedDate, timeFilter, setTimeFilter, filteredSlots, displayTz, compareTz, setCompareTz, classLog, getEntryAt, studentById, students, setSlotModal, bookDayEntry, batchBookEntries }) {
+function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents, view, setView, selectedDate, setSelectedDate, timeFilter, setTimeFilter, filteredSlots, displayTz, compareTz, setCompareTz, classLog, getEntryAt, studentById, students, setSlotModal, bookDayEntry, batchBookEntries }) {
   const isToday = selectedDate === toDateStr(new Date());
   const monday = mondayOf(selectedDate);
   const weekDates = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(monday, i));
 
-  // teacher's primary column is always PH; a student's primary column is their own home time zone, with no second column to compare against
-  const primaryTz = isTeacher ? displayTz : (DISPLAY_TZ_OPTIONS.find((o) => o.id === (myStudent?.homeTz || 'ph')) || DISPLAY_TZ_OPTIONS[0]);
-  const secondaryTz = isTeacher ? compareTz : null;
+  // teacher and reps see PH/CN with an optional compare column; a plain student's primary column
+  // is their own home time zone, with no second column to compare against
+  const primaryTz = (isTeacher || isRep) ? displayTz : (DISPLAY_TZ_OPTIONS.find((o) => o.id === (myStudent?.homeTz || 'ph')) || DISPLAY_TZ_OPTIONS[0]);
+  const secondaryTz = (isTeacher || isRep) ? compareTz : null;
 
   return (
     <div>
@@ -1017,7 +1044,7 @@ function ScheduleTab({ isTeacher, myStudentId, myStudent, view, setView, selecte
         </div>
 
         <div className="flex-1" />
-        {isTeacher && (
+        {(isTeacher || isRep) && (
           <label className="flex items-center gap-1.5 text-xs" style={{ color: MUTED }}>
             Compare with:
             <select value={compareTz ? compareTz.id : ''} onChange={(e) => setCompareTz(DISPLAY_TZ_OPTIONS.find((o) => o.id === e.target.value) || null)}
@@ -1039,15 +1066,15 @@ function ScheduleTab({ isTeacher, myStudentId, myStudent, view, setView, selecte
       </div>
 
       {view === 'day' ? (
-        <DayGrid date={selectedDate} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} setSlotModal={setSlotModal} isTeacher={isTeacher} myStudentId={myStudentId} />
+        <DayGrid date={selectedDate} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} setSlotModal={setSlotModal} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
       ) : (
-        <WeekGrid weekDates={weekDates} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} students={students} setSlotModal={setSlotModal} batchBookEntries={batchBookEntries} isTeacher={isTeacher} myStudentId={myStudentId} />
+        <WeekGrid weekDates={weekDates} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} students={students} companyStudents={companyStudents} setSlotModal={setSlotModal} batchBookEntries={batchBookEntries} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
       )}
     </div>
   );
 }
 
-function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, setSlotModal, isTeacher, myStudentId }) {
+function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, setSlotModal, isTeacher, isRep, myStudentId }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
       {slots.map((time) => {
@@ -1055,7 +1082,8 @@ function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, s
         const student = entry ? studentById[entry.studentId] : null;
         const cat = student ? CATEGORY_META[student.category] : null;
         const isMine = entry && entry.studentId === myStudentId;
-        const hideName = !isTeacher && entry && !isMine;
+        const repCanSee = isRep && student?.category === 'company';
+        const hideName = !isTeacher && entry && !isMine && !repCanSee;
         return (
           <div key={time} onClick={() => setSlotModal({ date, time })}
             className="flex items-center gap-3 px-4 py-2 cursor-pointer"
@@ -1129,15 +1157,16 @@ function StudentPicker({ students, value, onChange, placeholder = 'Search studen
   );
 }
 
-function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentById, students, setSlotModal, batchBookEntries, isTeacher, myStudentId }) {
+function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentById, students, companyStudents, setSlotModal, batchBookEntries, isTeacher, isRep, myStudentId }) {
   const [bookAs, setBookAs] = useState('');
   const [selfSelecting, setSelfSelecting] = useState(false);
   const [selected, setSelected] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
 
   const cellKey = (date, time) => `${date}|${time}`;
-  const bookingActive = isTeacher ? !!bookAs : selfSelecting;
-  const bookingTarget = isTeacher ? bookAs : myStudentId;
+  const bookingActive = (isTeacher || isRep) ? !!bookAs : selfSelecting;
+  const bookingTarget = (isTeacher || isRep) ? bookAs : myStudentId;
+  const pickerStudents = isTeacher ? students : companyStudents;
 
   const toggleCell = (date, time) => {
     const entry = getEntryAt(date, time);
@@ -1166,11 +1195,11 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
   return (
     <div>
       <div className="mb-3 rounded-xl p-3 flex flex-wrap items-center gap-2" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}` }}>
-        {isTeacher ? (
+        {(isTeacher || isRep) ? (
           <>
             <span className="text-sm" style={{ color: MUTED }}>Book as:</span>
             <div className="w-64">
-              <StudentPicker students={students} value={bookAs} onChange={(id) => { setBookAs(id); clearSelection(); }} placeholder="Search student to book as…" />
+              <StudentPicker students={pickerStudents} value={bookAs} onChange={(id) => { setBookAs(id); clearSelection(); }} placeholder={isRep ? 'Search company student to book as…' : 'Search student to book as…'} />
             </div>
           </>
         ) : (
@@ -1183,7 +1212,7 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
             <span className="text-xs" style={{ color: MUTED }}>{selected.size} slot(s) selected — click empty cells below to add or remove</span>
             <div className="flex-1" />
             <Btn onClick={clearSelection} disabled={selected.size === 0}>Clear</Btn>
-            <Btn variant="accent" onClick={commitBatch} disabled={selected.size === 0 || busy}>{busy ? 'Booking…' : `Book ${selected.size} slot(s)${isTeacher ? '' : ' for me'}`}</Btn>
+            <Btn variant="accent" onClick={commitBatch} disabled={selected.size === 0 || busy}>{busy ? 'Booking…' : `Book ${selected.size} slot(s)${(isTeacher || isRep) ? '' : ' for me'}`}</Btn>
           </>
         )}
       </div>
@@ -1191,7 +1220,7 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
       <div className="overflow-x-auto rounded-xl" style={{ border: `1px solid ${BORDER}` }}>
         <div style={{ minWidth: compareTz ? '920px' : '820px' }}>
           <div className={`grid ${compareTz ? 'grid-cols-9' : 'grid-cols-8'}`} style={{ borderBottom: `1px solid ${BORDER}` }}>
-            <div className="px-2 py-2 text-xs" style={{ color: MUTED }}>{isTeacher ? 'Time (PH/CN)' : `Time (${displayTz.label})`}</div>
+            <div className="px-2 py-2 text-xs" style={{ color: MUTED }}>{(isTeacher || isRep) ? 'Time (PH/CN)' : `Time (${displayTz.label})`}</div>
             {compareTz && <div className="px-2 py-2 text-xs" style={{ color: MUTED }}>{compareTz.label}</div>}
             {weekDates.map((d, i) => (
               <div key={d} className="px-2 py-2 text-xs font-medium text-center">
@@ -1207,7 +1236,8 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
                 const entry = getEntryAt(date, time);
                 const student = entry ? studentById[entry.studentId] : null;
                 const isMine = entry && entry.studentId === myStudentId;
-                const hideName = !isTeacher && entry && !isMine;
+                const repCanSee = isRep && student?.category === 'company';
+                const hideName = !isTeacher && entry && !isMine && !repCanSee;
                 const isSelected = selected.has(cellKey(date, time));
                 return (
                   <div key={date} onClick={() => toggleCell(date, time)}
@@ -1236,10 +1266,48 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
 
 /* ---------------- Slot modal ---------------- */
 
-function SlotModal({ ctx, isTeacher, myStudentId, displayTz, compareTz, students, studentById, entry, onClose, onBookDay, onStatus, onRemoveDay, onOpenFeedback }) {
+function SlotModal({ ctx, isTeacher, isRep, myStudentId, companyStudents, displayTz, compareTz, students, studentById, entry, onClose, onBookDay, onStatus, onRemoveDay, onOpenFeedback }) {
   const [pick, setPick] = useState('');
   const student = entry ? studentById[entry.studentId] : null;
   const isMine = entry && entry.studentId === myStudentId;
+  const repCanSee = isRep && student?.category === 'company';
+
+  if (isRep) {
+    return (
+      <Modal onClose={onClose}>
+        <div className="mb-3">
+          <div className="text-xs uppercase tracking-wide mb-0.5" style={{ color: MUTED }}>{prettyDate(ctx.date)}</div>
+          <div className="font-mono text-lg">{displaySlotLabel(ctx.date, ctx.time, displayTz)} <span className="text-xs" style={{ color: MUTED }}>PH/CN</span></div>
+          {compareTz && <div className="font-mono text-sm" style={{ color: MUTED }}>{displaySlotLabel(ctx.date, ctx.time, compareTz)} {compareTz.label}</div>}
+        </div>
+        {!entry && (
+          <div>
+            <div className="text-sm mb-2" style={{ color: MUTED }}>Book a company student into this slot</div>
+            <div className="mb-3">
+              <StudentPicker students={companyStudents} value={pick} onChange={setPick} placeholder="Search company student…" />
+            </div>
+            <Btn variant="accent" disabled={!pick} onClick={() => onBookDay(pick)}>Book lesson</Btn>
+          </div>
+        )}
+        {entry && repCanSee && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: student.color }} />
+              <span className="font-medium">{student.name}</span>
+              <Pill color={CATEGORY_META[student.category].color}>{CATEGORY_META[student.category].label}</Pill>
+            </div>
+            <Pill color={STATUS_META[entry.status].color}>{STATUS_META[entry.status].label}</Pill>
+            {entry.status === 'scheduled' && (
+              <div className="mt-3">
+                <Btn variant="danger" onClick={onRemoveDay}><Trash2 size={14} /> Cancel this booking</Btn>
+              </div>
+            )}
+          </div>
+        )}
+        {entry && !repCanSee && <p className="text-sm" style={{ color: MUTED }}>This slot is already booked.</p>}
+      </Modal>
+    );
+  }
 
   if (!isTeacher) {
     return (
@@ -1812,6 +1880,8 @@ function BillingTab({ students, classLog, studentById, payments, addPayment, set
   const [receiptFor, setReceiptFor] = useState(null);
   const [payForm, setPayForm] = useState({ studentId: '', amount: '', lessonsPurchased: '', note: '' });
   const [showSettings, setShowSettings] = useState(false);
+  const [showRepSettings, setShowRepSettings] = useState(false);
+  const [repPasscodeInput, setRepPasscodeInput] = useState('');
   const [showDanger, setShowDanger] = useState(false);
 
   const rangeEntries = useMemo(() => {
@@ -1878,6 +1948,31 @@ function BillingTab({ students, classLog, studentById, payments, addPayment, set
             <div>
               <div className="text-xs mb-1" style={{ color: MUTED }}>Rules & policies (shown at the bottom of every receipt)</div>
               <textarea value={settings?.policiesText || ''} onChange={(e) => updateSettings({ policiesText: e.target.value })} rows={3} className="w-full rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mb-4">
+        <button onClick={() => setShowRepSettings(!showRepSettings)} className="text-sm font-medium" style={{ color: ACCENT }}>{showRepSettings ? '▾' : '▸'} Company representative access</button>
+        {showRepSettings && (
+          <div className="mt-2 rounded-xl p-4 space-y-2" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}` }}>
+            <p className="text-xs" style={{ color: MUTED }}>
+              {settings?.repPasscode
+                ? 'Representative access is set up. Anyone with this passcode can log in as "Company Representative" and book Company-category students — they can\'t see Private/Family bookings or reach Students, Progress, Billing, or Reports.'
+                : "Not set up yet — nobody can log in as a representative until you set a passcode here."}
+            </p>
+            <input type="password" value={repPasscodeInput} onChange={(e) => setRepPasscodeInput(e.target.value)} placeholder="Representative passcode"
+              className="w-full rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }} />
+            <div className="flex gap-2 flex-wrap">
+              <Btn variant="accent" disabled={!repPasscodeInput.trim()} onClick={() => { updateSettings({ repPasscode: repPasscodeInput.trim() }); setRepPasscodeInput(''); }}>
+                {settings?.repPasscode ? 'Update passcode' : 'Set passcode'}
+              </Btn>
+              {settings?.repPasscode && (
+                <Btn variant="danger" onClick={() => { if (window.confirm('Remove representative access? Nobody will be able to log in with the old passcode anymore.')) updateSettings({ repPasscode: '' }); }}>
+                  Remove representative access
+                </Btn>
+              )}
             </div>
           </div>
         )}
