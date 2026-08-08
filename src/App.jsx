@@ -672,6 +672,7 @@ export default function ESLConsole() {
   const [activeTab, setActiveTab] = useState('schedule');
   const [slotModal, setSlotModal] = useState(null);
   const [feedbackTarget, setFeedbackTarget] = useState(null);
+  const companyStudents = useMemo(() => students.filter((s) => s.category === 'company'), [students]);
   const skipSave = useRef(true);
 
   useEffect(() => {
@@ -907,7 +908,6 @@ export default function ESLConsole() {
   const isTeacher = identity.role === 'teacher';
   const isRep = identity.role === 'representative';
   const myStudentId = identity.studentId;
-  const companyStudents = useMemo(() => students.filter((s) => s.category === 'company'), [students]);
   const tabs = isTeacher
     ? [
         { id: 'schedule', label: 'Schedule', icon: CalendarDays },
