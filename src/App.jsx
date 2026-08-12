@@ -872,6 +872,17 @@ export default function ESLConsole() {
     setFamilyPools([]);
   };
 
+  // Restoring a backup file just sets each piece of state back from the file — the existing
+  // save-to-Supabase effects (further down) pick up the change automatically, same as any other edit.
+  const restoreAll = (data) => {
+    if (data.students) setStudents(data.students);
+    if (data.classLog) setClassLog(data.classLog);
+    if (data.payments) setPayments(data.payments);
+    if (data.assessments) setAssessments(data.assessments);
+    if (data.familyPools) setFamilyPools(data.familyPools);
+    if (data.settings) updateSettings(data.settings);
+  };
+
   const handleSetTeacher = async (newPasscode) => {
     if (newPasscode) {
       const next = { ...(settings || {}), teacherPasscode: newPasscode };
@@ -975,7 +986,8 @@ export default function ESLConsole() {
             restrictedStudentId={isTeacher ? null : myStudentId} />
         )}
         {activeTab === 'billing' && isTeacher && (
-          <BillingTab students={students} classLog={classLog} studentById={studentById} payments={payments} addPayment={addPayment} settings={settings} updateSettings={updateSettings}
+          <BillingTab students={students} classLog={classLog} studentById={studentById} payments={payments} assessments={assessments} familyPools={familyPools} addPayment={addPayment} settings={settings} updateSettings={updateSettings}
+            restoreAll={restoreAll}
             clearStudents={clearStudents} clearBookings={clearBookings} clearPayments={clearPayments} clearAssessments={clearAssessments} clearFamilyPools={clearFamilyPools} clearEverything={clearEverything} />
         )}
         {activeTab === 'reports' && isTeacher && <ReportsTab classLog={classLog} studentById={studentById} />}
@@ -1871,7 +1883,7 @@ function ProgressTab({ students, classLog, assessments, addAssessment, restricte
 
 /* ---------------- Billing tab ---------------- */
 
-function BillingTab({ students, classLog, studentById, payments, addPayment, settings, updateSettings, clearStudents, clearBookings, clearPayments, clearAssessments, clearFamilyPools, clearEverything }) {
+function BillingTab({ students, classLog, studentById, payments, assessments, familyPools, addPayment, settings, updateSettings, restoreAll, clearStudents, clearBookings, clearPayments, clearAssessments, clearFamilyPools, clearEverything }) {
   const today = toDateStr(new Date());
   const monthStart = `${today.slice(0, 7)}-01`;
   const [rangeStart, setRangeStart] = useState(monthStart);
@@ -1883,6 +1895,7 @@ function BillingTab({ students, classLog, studentById, payments, addPayment, set
   const [showRepSettings, setShowRepSettings] = useState(false);
   const [repPasscodeInput, setRepPasscodeInput] = useState('');
   const [showDanger, setShowDanger] = useState(false);
+  const [showBackup, setShowBackup] = useState(false);
 
   const rangeEntries = useMemo(() => {
     const result = {};
@@ -1909,6 +1922,36 @@ function BillingTab({ students, classLog, studentById, payments, addPayment, set
 
   const grandTotal = summaryRows.reduce((sum, r) => sum + r.total, 0);
   const grandCount = summaryRows.reduce((sum, r) => sum + r.count, 0);
+
+  const downloadBackup = () => {
+    const backup = { exportedAt: new Date().toISOString(), students, classLog, payments, assessments, familyPools, settings };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `esl-console-backup-${toDateStr(new Date())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRestoreFile = (e) => {
+    const file = e.target.files[0];
+    e.target.value = ''; // reset so picking the same file again still fires onChange
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      let data;
+      try { data = JSON.parse(ev.target.result); }
+      catch (err) { alert("That file doesn't look like a valid backup file."); return; }
+      if (window.confirm('This will REPLACE all current students, bookings, payments, assessments, and family pools with what\'s in this backup file. This cannot be undone. Continue?')) {
+        restoreAll(data);
+        alert('Backup restored.');
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const submitPayment = () => {
     if (!payForm.studentId || !payForm.amount) return;
@@ -2048,6 +2091,22 @@ function BillingTab({ students, classLog, studentById, payments, addPayment, set
           </div>
         ))}
         {summaryRows.length === 0 && <div className="px-4 py-10 text-center text-sm" style={{ color: MUTED }}>No finished or charged lessons in this range yet.</div>}
+      </div>
+
+      <div className="mt-6">
+        <button onClick={() => setShowBackup(!showBackup)} className="text-sm font-medium" style={{ color: ACCENT }}>{showBackup ? '▾' : '▸'} Backup & Restore</button>
+        {showBackup && (
+          <div className="mt-2 rounded-xl p-4 space-y-4" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}` }}>
+            <div>
+              <p className="text-xs mb-2" style={{ color: MUTED }}>Download everything — students, bookings, payments, assessments, family pools, and settings — as one file you can keep somewhere safe.</p>
+              <Btn variant="accent" onClick={downloadBackup}><Download size={14} /> Download backup</Btn>
+            </div>
+            <div className="pt-3" style={{ borderTop: `1px solid ${BORDER}` }}>
+              <p className="text-xs mb-2" style={{ color: MUTED }}>Restore from a backup file. This replaces everything currently saved for everyone — use with care.</p>
+              <input type="file" accept="application/json" onChange={handleRestoreFile} className="text-xs" style={{ color: TEXT }} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mt-6">
