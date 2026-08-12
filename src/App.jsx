@@ -89,139 +89,51 @@ const ASSESSMENT_SKILLS = [
 ];
 
 
-// 7 phrase choices per skill, per overall lesson level (1=Needs Improvement...4=Excellent), written separately per age bracket
-const PHRASE_VARIANTS = {
-  kid: {
-    speaking: {
-      1: ["Talking out loud is still pretty tricky and needs lots of practice.", "Had a hard time saying full sentences today.", "Needed lots of help to speak up in class.", "Found it tough to share ideas out loud today.", "Speaking still feels a little scary — let's keep practicing!", "Needed a lot of encouragement to talk today.", "Still working hard on feeling brave enough to speak up."],
-      2: ["Speaking is getting better, just a little shy sometimes.", "Did a nice job trying to talk today, even with some help.", "Getting braver about speaking up in class!", "Spoke up a bit more today, which is great!", "Feeling more comfortable answering questions out loud.", "Doing well with simple conversations now.", "Speaking is improving every single lesson!"],
-      3: ["Spoke up with lots of confidence today!", "Did great in back-and-forth conversation!", "Talked clearly for most of the lesson — nice job!", "Shared ideas out loud with barely any hesitation.", "Loved how much you joined in and spoke up today!", "Really solid speaking today, especially on favorite topics!", "Spoke naturally without needing much help at all."],
-      4: ["Spoke fluently and confidently the whole lesson — amazing!", "Shared ideas clearly and naturally, no hesitation at all!", "Wow, barely needed any help talking today!", "Talked like a natural, even about tricky topics!", "Confident and clear from start to finish — awesome job!", "Outstanding talking today!", "Speaking was a real superstar moment this lesson!"],
-    },
-    listening: {
-      1: ["Had trouble following what was said today.", "Needed things repeated a few times to understand.", "Found it tricky to catch all the words today.", "Listening needs a bit more practice.", "Had a hard time keeping up with spoken English today.", "Needed things said slower and simpler today.", "Still learning how to follow along when listening."],
-      2: ["Getting better and better at listening!", "Understood most things with just a few repeats.", "Picking up more key words when listening now.", "Listening skills are growing with practice!", "Kept up with most of today's lesson — nice work!", "Needed a little repeating but followed along well.", "Making great progress with listening!"],
-      3: ["Followed along really well today!", "Understood instructions quickly — awesome!", "Picked up on lots of details while listening.", "Comfortable following along at a normal speed!", "Listening was strong today!", "Kept up well with everything said in class.", "Great grasp of spoken English today!"],
-      4: ["Understood everything with total ease today!", "Followed fast talking without any trouble!", "Excellent listening the whole lesson!", "Picked up even the tiniest details — impressive!", "Zero trouble following instructions today!", "Listening was a real strength today!", "Understood everything, no repeats needed!"],
-    },
-    reading: {
-      1: ["Reading new words is still tricky right now.", "Reading is slow and needs more help.", "Found it hard to sound out new words today.", "Reading needs more practice.", "Today's reading was a bit tough to follow.", "Needs easier books to build reading confidence.", "Still working on the basics of reading."],
-      2: ["Reading is getting better with practice!", "Read most of it with a little help.", "Getting better at sounding out new words!", "Reading is coming along nicely.", "Did pretty well with today's reading.", "Making good progress with reading!", "Read most of it on your own today — great job!"],
-      3: ["Read with great confidence today!", "Handled today's reading really well!", "Good reading and understanding throughout!", "Comfortable reading and answering questions about it.", "Read smoothly with only a few little stumbles.", "Really strong grasp of today's reading!", "Reading skills are solid and getting better!"],
-      4: ["Read fluently and even caught the tricky details!", "Excellent understanding of today's reading!", "Read like a natural — wonderful job!", "Zero trouble with today's story!", "Reading was a real strength today!", "Picked up on the mood and details while reading!", "Outstanding reading today!"],
-    },
-    vocabulary: {
-      1: ["New words are still tricky and need more practice.", "Had trouble remembering recent words today.", "Needs more practice with new words.", "Found it hard to use new words in sentences.", "Word knowledge is still pretty basic right now.", "Needs more practice recognizing common words.", "Still building up everyday words."],
-      2: ["Learning new words steadily — nice work!", "Picking up new words, just needs more practice.", "Used a few new words correctly today!", "Word knowledge is growing lesson by lesson!", "Remembered most of the new words today!", "Getting comfy using new words!", "Great progress building up new words!"],
-      3: ["Has a really solid set of words to use!", "Used new words correctly and naturally today!", "Remembered lots of recently learned words!", "Comfortable using lots of everyday words!", "Word use was strong today!", "Used new words really well today!", "Solid vocabulary for everything learned so far!"],
-      4: ["Uses lots of great words — impressive!", "Amazing range of words for this level!", "Used big words naturally and correctly!", "Words were a real strength today!", "Picked just the right words to share ideas!", "Excellent memory and use of new words!", "Word skills were way above expectations today!"],
-    },
-    grammar: {
-      1: ["Sentence building is still tricky right now.", "Grammar needs lots of practice.", "Found today's sentence patterns hard to use.", "Needs more practice with grammar rules.", "Today's grammar point was a bit tough.", "A few mix-ups made sentences tricky to follow.", "Still building the basics of grammar."],
-      2: ["Grammar is getting better, just still a bit mixed up sometimes.", "Got grammar right some of the time today!", "Making steady progress with sentences!", "Fewer grammar mix-ups today!", "Getting more comfortable with today's grammar point!", "Used correct grammar in simple sentences today!", "Grammar is coming along nicely!"],
-      3: ["Used grammar correctly most of the time!", "Did really well with today's grammar point!", "Good sentence building today!", "Only a few small grammar mix-ups today.", "Comfortable using different types of sentences!", "Solid grammar all through the lesson!", "Used grammar rules correctly and confidently!"],
-      4: ["Excellent command of grammar today!", "Used tricky sentence patterns correctly!", "Grammar was spot-on the whole lesson!", "Impressive sentence building for this level!", "Grammar came naturally, barely any mistakes!", "Grammar was a real strength today!", "Excellent accuracy with lots of grammar points!"],
-    },
-    pronunciation: {
-      1: ["Some sounds are still tricky to say clearly.", "A few words were hard to understand today.", "Found today's sounds tricky to make.", "Needs more practice to sound clear.", "Today's target sounds were tough to say.", "Pronunciation needs continued practice.", "Still working on saying basic sounds clearly."],
-      2: ["Getting clearer with practice!", "Getting easier to understand with common words!", "Made good progress with today's sounds!", "Getting easier to understand step by step!", "Needed a few repeats but improved through the lesson!", "Making great progress with sounds!", "Getting clearer lesson by lesson!"],
-      3: ["Talks clearly most of the time!", "Pronunciation was clear for most of the lesson!", "Comfortable making today's target sounds!", "Good clarity with just a few little slips.", "Easy to understand throughout the lesson!", "Solid pronunciation on familiar words today!", "Clear speech with just a little more polish needed."],
-      4: ["Very clear and natural talking today!", "Pronunciation was excellent the whole lesson!", "Sounded natural, even with tricky words!", "Impressively clear talking today!", "Pronunciation was a real strength today!", "Spoke super clearly today!", "Excellent with tricky sounds today!"],
-    },
-    engagement: {
-      1: ["Seemed a little distracted today.", "Needed extra encouragement to stay focused.", "Energy was a bit low today.", "Found it hard to stay on task today.", "Needed lots of reminders to join in.", "Energy and focus were a bit low today.", "Found it tricky to stay engaged today."],
-      2: ["Joined in pretty well today!", "Took part with a little encouragement!", "Got more into it as the lesson went on!", "Stayed mostly on task today!", "Showed good focus for most of the lesson!", "Steady energy today, even if a little quiet.", "Took part reasonably well today!"],
-      3: ["Really engaged and joined in well today!", "Stayed focused the whole lesson!", "Took part actively in today's activities!", "Great energy and focus for most of the lesson!", "Engaged well with everything today!", "Great energy throughout today's lesson!", "Stayed on task and involved the whole time!"],
-      4: ["Super engaged and excited the whole lesson!", "Brought amazing energy to the whole lesson!", "Fully engaged and eager to join in today!", "Excellent focus and excitement throughout!", "Engagement was outstanding today!", "Involved and enthusiastic the entire time!", "Couldn't ask for better energy today!"],
-    },
+// One phrase per skill, per overall lesson level (1=Needs Improvement...4=Excellent), per comment style/set.
+// Set 1 = Formal, Set 2 = Casual, Set 3 = Playful — pick a style once above and every skill's phrase follows it.
+const COMMENT_STYLES = { 1: 'Formal', 2: 'Casual', 3: 'Playful' };
+const PHRASE_SETS = {
+  speaking: {
+    1: { 1: "Speaking still needs guided practice to build confidence and fluency.", 2: "Still working on speaking up more confidently \u2014 needs more practice.", 3: "Getting those words out loud is still tricky, but we'll crack it!" },
+    2: { 1: "Speaking is showing steady improvement with continued practice.", 2: "Doing okay with speaking, getting a bit more comfortable each time.", 3: "Speaking is leveling up bit by bit \u2014 keep chatting away!" },
+    3: { 1: "Spoke with good confidence on familiar topics this lesson.", 2: "Talked pretty confidently today, especially on topics already known well.", 3: "Chatted away like a champ today \u2014 loving the confidence!" },
+    4: { 1: "Spoke fluently and confidently throughout the entire lesson.", 2: "Speaking was smooth and easy the whole lesson, nice work.", 3: "Wow, speaking was on fire today \u2014 total superstar mode!" },
   },
-  teen: {
-    speaking: {
-      1: ["Speaking's still tough right now and needs more guided practice.", "Had a hard time forming full sentences out loud today.", "Needed a lot of prompting just to speak up.", "Struggled to get thoughts out loud during class today.", "Speaking needs more reps before it starts feeling natural.", "Pretty hesitant to talk without a lot of support today.", "Still working on the confidence to speak up freely."],
-      2: ["Speaking's coming along, just still a little hesitant.", "Got the point across with some help today.", "Steady progress putting sentences together on the spot.", "Spoke up more today, even if still a bit unsure.", "Getting more comfortable answering questions out loud.", "Decent headway with basic conversation today.", "Speaking's improving bit by bit."],
-      3: ["Spoke with solid confidence on familiar topics today.", "Held their own in back-and-forth conversation.", "Communicated clearly for most of the lesson.", "Comfortable sharing ideas with only minor hesitation.", "Did a nice job jumping into discussions today.", "Solid speaking today, especially on stuff they know well.", "Spoke pretty naturally without much prompting."],
-      4: ["Spoke fluently and confidently the whole lesson.", "Expressed ideas clearly and naturally, no hesitation.", "Barely needed any prompting today — impressive.", "Spoke like a natural, even on unfamiliar topics.", "Confident and clear from start to finish.", "Really strong verbal communication today.", "Speaking was a definite strength this lesson."],
-    },
-    listening: {
-      1: ["Had a hard time following spoken instructions today.", "Needed things repeated a few times to catch it.", "Struggles to catch key details when listening.", "Listening needs more focused practice.", "Had trouble keeping up with spoken English today.", "Needs things said a bit slower to follow along.", "Still working on following spoken instructions."],
-      2: ["Following spoken English is getting better steadily.", "Understood most instructions with a couple of repeats.", "Getting better at picking up key words.", "Listening's improving with practice.", "Kept up with most of today's content.", "Needed a little repetition but followed along fine.", "Solid progress on listening comprehension."],
-      3: ["Followed most of the spoken content well today.", "Understood instructions quickly, barely needed repeats.", "Picked up on details well throughout the lesson.", "Comfortable following conversation at a normal pace.", "Listening was strong today.", "Kept up well with instructions and dialogue.", "Good handle on spoken English today."],
-      4: ["Understood spoken English with total ease today.", "Followed fast, natural speech with no trouble at all.", "Excellent listening the entire lesson.", "Picked up on subtle details in conversation.", "Zero trouble following instructions today.", "Listening was a clear strength today.", "Understood everything without needing repeats."],
-    },
-    reading: {
-      1: ["Needed a lot of support decoding new words today.", "Reading's still slow and needs more help.", "Struggles to sound out unfamiliar words.", "Reading comprehension needs more focused practice.", "Found today's passage tough to follow.", "Needs simpler texts to build up reading confidence.", "Still working on basic reading fluency."],
-      2: ["Reading's improving with regular practice.", "Got through most of the passage with some help.", "Getting better at sounding out new words.", "Reading comprehension is coming along steadily.", "Handled today's text reasonably well.", "Good progress with reading fluency.", "Read most of it independently today."],
-      3: ["Read confidently with good comprehension today.", "Handled today's passage well with minimal help.", "Good reading fluency and understanding throughout.", "Comfortable reading and answering questions about it.", "Read smoothly with just a few stumbles.", "Strong grasp of today's reading material.", "Reading skills are solid and getting better."],
-      4: ["Read fluently and picked up on subtle nuance.", "Excellent comprehension of today's material.", "Read like a genuinely confident reader.", "Zero trouble with today's passage.", "Reading was a clear strength this lesson.", "Picked up on tone and detail while reading.", "Outstanding reading fluency today."],
-    },
-    vocabulary: {
-      1: ["Vocabulary's pretty limited right now and needs more exposure.", "Struggled to recall recently learned words today.", "Needs more repetition to build up vocabulary.", "Had a hard time using new words in sentences.", "Vocabulary range is still pretty basic.", "Needs more practice recognizing common words.", "Still building up a base of everyday vocabulary."],
-      2: ["Vocabulary's growing steadily with practice.", "Picking up new words, still needs repetition.", "Used a few new words correctly today.", "Vocabulary's expanding lesson by lesson.", "Recalled most of the recently taught words today.", "Getting more comfortable using new vocabulary.", "Good progress building up word knowledge."],
-      3: ["Has a solid, usable vocabulary range.", "Used new vocabulary correctly and naturally today.", "Good recall of recently learned words.", "Comfortable using a wide range of everyday words.", "Vocabulary use was strong throughout the lesson.", "Applied new words well in context today.", "Solid vocabulary for what's been covered so far."],
-      4: ["Uses a genuinely rich and varied vocabulary.", "Impressive range of vocabulary for this level.", "Used advanced words naturally and correctly.", "Vocabulary was a clear strength today.", "Picked precise words to get ideas across.", "Excellent recall and use of vocabulary.", "Vocabulary use was well above expectations."],
-    },
-    grammar: {
-      1: ["Makes frequent grammar mistakes that need correcting.", "Grammar needs a lot of guided practice.", "Struggled with basic sentence structure today.", "Needs more repetition with grammar rules.", "Found today's grammar point tough to apply.", "Grammar mistakes made sentences hard to follow at times.", "Still building a foundation with basic grammar."],
-      2: ["Grammar's improving but still a bit inconsistent.", "Applied grammar rules correctly some of the time.", "Steady progress with sentence structure.", "Grammar mistakes are becoming less frequent.", "Getting more comfortable with today's grammar point.", "Used correct grammar in simple sentences today.", "Grammar's coming along with continued practice."],
-      3: ["Uses grammar accurately in most sentences.", "Applied today's grammar point well overall.", "Good control of sentence structure today.", "Grammar mistakes were minor and infrequent.", "Comfortable using a range of grammar structures.", "Solid grammar accuracy throughout the lesson.", "Applied grammar rules correctly and confidently."],
-      4: ["Has excellent command of grammar.", "Used complex grammar structures accurately today.", "Grammar was consistently accurate throughout.", "Impressive control of sentence structure for this level.", "Grammar came naturally, barely any mistakes.", "Grammar was a clear strength this lesson.", "Excellent accuracy across a range of grammar points."],
-    },
-    pronunciation: {
-      1: ["Needs a lot of practice on pronunciation for clarity.", "Pronunciation made some words hard to understand today.", "Struggled with the sounds in today's vocabulary.", "Needs more repetition to build clear pronunciation.", "Found today's target sounds tough to produce.", "Pronunciation needs continued, focused practice.", "Still working on clarity with basic sounds."],
-      2: ["Pronunciation's improving with practice.", "Getting clearer with commonly used words.", "Good progress with today's target sounds.", "Pronunciation's steadily getting easier to understand.", "Needed a few repeats but improved through the lesson.", "Solid gains with pronunciation practice.", "Clarity's improving lesson by lesson."],
-      3: ["Has generally clear pronunciation.", "Pronunciation was clear for most of the lesson.", "Comfortable producing today's target sounds.", "Good clarity with only occasional slips.", "Pronunciation was easy to understand throughout.", "Solid pronunciation on familiar vocabulary today.", "Clear speech with minor room for polish."],
-      4: ["Has very clear, natural pronunciation.", "Pronunciation was excellent throughout the lesson.", "Sounded natural, even with challenging words.", "Impressively clear pronunciation today.", "Pronunciation was a clear strength this lesson.", "Spoke with near-native clarity today.", "Excellent control over difficult sounds."],
-    },
-    engagement: {
-      1: ["Seemed distracted or a little low-energy today.", "Needed extra encouragement to stay focused.", "Engagement was low throughout the lesson.", "Struggled to stay on task today.", "Needed frequent prompts to participate.", "Energy and focus were lacking today.", "Found it hard to stay engaged with the material."],
-      2: ["Was fairly engaged during the lesson.", "Participated with a little encouragement today.", "Engagement picked up as the lesson went on.", "Stayed mostly on task with occasional reminders.", "Showed decent focus for most of the lesson.", "Engagement was steady, if a little quiet.", "Took part reasonably well today."],
-      3: ["Was engaged and participated well.", "Stayed focused and involved throughout the lesson.", "Took part actively in today's activities.", "Good energy and focus for most of the lesson.", "Engaged well with today's material.", "Participated with good energy throughout.", "Stayed on task and involved today."],
-      4: ["Was highly engaged and enthusiastic throughout.", "Brought great energy to the whole lesson.", "Fully engaged and eager to participate today.", "Excellent focus and enthusiasm throughout.", "Engagement was outstanding this lesson.", "Actively involved and enthusiastic the whole time.", "Couldn't have asked for better energy and focus today."],
-    },
+  listening: {
+    1: { 1: "Listening comprehension needs more focused practice going forward.", 2: "Following along when spoken to is still a bit tough.", 3: "Catching all those spoken words is still a challenge \u2014 we'll get there!" },
+    2: { 1: "Listening skills are improving steadily with regular practice.", 2: "Getting better at following along, just needs a little more.", 3: "Ears are leveling up \u2014 picking up more each lesson!" },
+    3: { 1: "Followed most spoken content well throughout the lesson.", 2: "Kept up with almost everything said today, nice job.", 3: "Those listening skills are on point today \u2014 nailed it!" },
+    4: { 1: "Understood spoken English with ease throughout the lesson.", 2: "Followed along easily the whole time, no trouble at all.", 3: "Listening was basically superhero-level today \u2014 incredible!" },
   },
-  adult: {
-    speaking: {
-      1: ["Speaking is still a challenge and needs more guided practice.", "Found it hard to form full sentences out loud today.", "Needs a lot of prompting to speak up in class.", "Struggled to get thoughts out verbally during today's lesson.", "Speaking practice needs more repetition before it feels natural.", "Hesitant to talk without a lot of support today.", "Still building the confidence to speak freely in English."],
-      2: ["Speaking is coming along, though still a bit hesitant at times.", "Managed to get points across with some prompting today.", "Showing steady progress putting sentences together out loud.", "Spoke up more today, even if still a little unsure.", "Getting more comfortable answering questions out loud.", "Making good headway with basic conversation today.", "Speaking is improving lesson by lesson."],
-      3: ["Spoke with good confidence on familiar topics today.", "Held up well in back-and-forth conversation.", "Communicated clearly for most of the lesson.", "Comfortable expressing ideas out loud with only minor hesitation.", "Did a nice job speaking up and joining discussions.", "Solid speaking today, especially on topics they know well.", "Spoke naturally without needing much prompting."],
-      4: ["Spoke fluently and confidently throughout the lesson.", "Expressed ideas clearly and naturally without hesitation.", "Impressive fluency, barely needed any prompting today.", "Spoke like a natural, even on unfamiliar topics.", "Confident, clear speaking from start to finish.", "Outstanding verbal communication today.", "Speaking was a real strength in this lesson."],
-    },
-    listening: {
-      1: ["Had trouble following spoken instructions today.", "Needed instructions repeated several times to understand.", "Struggles to catch key details when listening.", "Listening comprehension needs more focused practice.", "Found it hard to keep up with spoken English today.", "Needs simpler, slower speech to follow along.", "Still developing the ability to follow spoken instructions."],
-      2: ["Following spoken English is improving steadily.", "Understood most instructions with occasional repeats.", "Getting better at picking up key words when listening.", "Listening skills are growing with practice.", "Kept up with most of today's spoken content.", "Needed a little repetition but followed along well.", "Making solid progress with listening comprehension."],
-      3: ["Followed most spoken content well today.", "Understood instructions quickly with little repetition needed.", "Picked up on spoken details well throughout the lesson.", "Comfortable following conversation at a natural pace.", "Listening comprehension was strong today.", "Kept up well with spoken instructions and dialogue.", "Good grasp of spoken English throughout the lesson."],
-      4: ["Understood spoken English with ease today.", "Followed fast, natural speech without any trouble.", "Excellent listening comprehension throughout the lesson.", "Picked up even subtle details in conversation.", "No trouble at all following spoken instructions.", "Listening was a clear strength today.", "Understood everything without needing repetition."],
-    },
-    reading: {
-      1: ["Needs support decoding new words while reading.", "Reading is still slow and needs a lot of help.", "Struggles to sound out unfamiliar words.", "Reading comprehension needs more focused practice.", "Found today's reading passage difficult to follow.", "Needs simpler texts to build reading confidence.", "Still working on basic reading fluency."],
-      2: ["Reading is improving with regular practice.", "Managed most of the passage with some help.", "Getting better at sounding out new words.", "Reading comprehension is coming along steadily.", "Handled today's text reasonably well.", "Making good progress with reading fluency.", "Needed occasional help but read most of it independently."],
-      3: ["Read confidently with good comprehension today.", "Handled today's passage well with minimal help.", "Good reading fluency and understanding throughout.", "Comfortable reading and answering comprehension questions.", "Read smoothly with only occasional stumbles.", "Strong grasp of today's reading material.", "Reading skills are solid and improving."],
-      4: ["Read fluently and picked up on subtle nuance.", "Excellent comprehension of today's reading material.", "Read naturally, like a confident reader.", "No trouble at all with today's passage.", "Reading was a clear strength this lesson.", "Picked up on tone and detail while reading.", "Outstanding reading fluency and understanding."],
-    },
-    vocabulary: {
-      1: ["Vocabulary is limited and needs more exposure to new words.", "Struggled to recall recently learned words today.", "Needs more repetition to build vocabulary.", "Found it hard to use new words in sentences.", "Vocabulary range is still quite basic.", "Needs more practice recognizing common words.", "Still building a foundation of everyday vocabulary."],
-      2: ["Vocabulary is growing steadily with practice.", "Picking up new words, though still needs repetition.", "Used a few new words correctly today.", "Vocabulary range is expanding lesson by lesson.", "Recalled most recently taught words today.", "Getting more comfortable using new vocabulary.", "Making good progress building word knowledge."],
-      3: ["Has a solid, usable vocabulary range.", "Used new vocabulary correctly and naturally today.", "Good recall of recently learned words.", "Comfortable using a wide range of everyday words.", "Vocabulary use was strong throughout the lesson.", "Applied new words well in context today.", "Solid vocabulary for topics covered so far."],
-      4: ["Uses a rich and varied vocabulary.", "Impressive range of vocabulary for this level.", "Used advanced words naturally and correctly.", "Vocabulary was a clear strength today.", "Picked precise words to express ideas clearly.", "Excellent recall and use of vocabulary.", "Vocabulary use was well above expectations."],
-    },
-    grammar: {
-      1: ["Makes frequent grammar mistakes that need correcting.", "Grammar needs a lot of guided practice.", "Struggled with basic sentence structure today.", "Needs more repetition with grammar rules.", "Found today's grammar point difficult to apply.", "Grammar mistakes made sentences hard to follow at times.", "Still building a foundation with basic grammar."],
-      2: ["Grammar is improving but still inconsistent.", "Applied grammar rules correctly some of the time.", "Making steady progress with sentence structure.", "Grammar mistakes are becoming less frequent.", "Getting more comfortable with today's grammar point.", "Used correct grammar in simple sentences today.", "Grammar is coming along with continued practice."],
-      3: ["Uses grammar accurately in most sentences.", "Applied today's grammar point well overall.", "Good control of sentence structure today.", "Grammar mistakes were minor and infrequent.", "Comfortable using a range of grammar structures.", "Solid grammar accuracy throughout the lesson.", "Applied grammar rules correctly with confidence."],
-      4: ["Has excellent command of grammar.", "Used complex grammar structures accurately today.", "Grammar was consistently accurate throughout.", "Impressive control of sentence structure for this level.", "Applied grammar naturally, with barely any mistakes.", "Grammar was a clear strength this lesson.", "Excellent accuracy across a range of grammar points."],
-    },
-    pronunciation: {
-      1: ["Needs a lot of practice on pronunciation for clarity.", "Pronunciation made some words hard to understand today.", "Struggled with the sounds in today's vocabulary.", "Needs more repetition to build clear pronunciation.", "Found today's target sounds difficult to produce.", "Pronunciation needs continued, focused practice.", "Still working on clarity with basic sounds."],
-      2: ["Pronunciation is improving with practice.", "Getting clearer with commonly used words.", "Made good progress with today's target sounds.", "Pronunciation is steadily becoming easier to understand.", "Needed a few repeats but improved through the lesson.", "Making solid gains with pronunciation practice.", "Clarity is improving lesson by lesson."],
-      3: ["Has generally clear pronunciation.", "Pronunciation was clear for most of the lesson.", "Comfortable producing today's target sounds.", "Good clarity with only occasional slips.", "Pronunciation was easy to understand throughout.", "Solid pronunciation on familiar vocabulary today.", "Clear speech with minor room for polish."],
-      4: ["Has very clear, natural pronunciation.", "Pronunciation was excellent throughout the lesson.", "Sounded natural, even with challenging words.", "Impressively clear pronunciation today.", "Pronunciation was a clear strength this lesson.", "Spoke with near-native clarity today.", "Excellent control over difficult sounds."],
-    },
-    engagement: {
-      1: ["Seemed distracted or low-energy today.", "Needed extra encouragement to stay focused.", "Engagement was low throughout the lesson.", "Struggled to stay on task today.", "Needed frequent prompts to participate.", "Energy and focus were lacking today.", "Found it hard to stay engaged with the material."],
-      2: ["Was somewhat engaged during the lesson.", "Participated with a little encouragement today.", "Engagement picked up as the lesson went on.", "Stayed mostly on task with occasional reminders.", "Showed decent focus for most of the lesson.", "Engagement was steady, if a little quiet.", "Took part reasonably well today."],
-      3: ["Was engaged and participated well.", "Stayed focused and involved throughout the lesson.", "Took part actively in today's activities.", "Good energy and focus for most of the lesson.", "Engaged well with today's material.", "Participated with good energy throughout.", "Stayed on task and involved today."],
-      4: ["Was highly engaged and enthusiastic throughout.", "Brought great energy to the whole lesson.", "Fully engaged and eager to participate today.", "Excellent focus and enthusiasm throughout.", "Engagement was outstanding this lesson.", "Actively involved and enthusiastic the whole time.", "Couldn't have asked for better energy and focus today."],
-    },
+  reading: {
+    1: { 1: "Reading comprehension needs more focused practice and support.", 2: "Reading is still a bit slow, needs more practice.", 3: "Those words are still playing hide and seek \u2014 let's keep practicing!" },
+    2: { 1: "Reading is improving steadily with consistent practice.", 2: "Getting better at reading, just needs a bit more repetition.", 3: "Reading skills are growing \u2014 turning pages like a pro in training!" },
+    3: { 1: "Read confidently with good comprehension throughout the lesson.", 2: "Read pretty confidently today and understood most of it.", 3: "Reading was smooth sailing today \u2014 great job!" },
+    4: { 1: "Read fluently and picked up on subtle nuance in the text.", 2: "Reading was fluent and easy, even caught the subtle stuff.", 3: "Reading like a total bookworm today \u2014 amazing!" },
+  },
+  vocabulary: {
+    1: { 1: "Vocabulary is limited and needs more exposure to new words.", 2: "Vocabulary's still pretty basic, needs more new words.", 3: "Word bank is still small \u2014 let's fill it up together!" },
+    2: { 1: "Vocabulary is growing steadily through continued practice.", 2: "Picking up new words little by little, good progress.", 3: "New words are sneaking in \u2014 vocabulary's growing!" },
+    3: { 1: "Has a solid, usable vocabulary range for this level.", 2: "Vocabulary's pretty solid now, using new words well.", 3: "Word power is strong today \u2014 vocabulary champion!" },
+    4: { 1: "Uses a rich and varied vocabulary with precision.", 2: "Vocabulary is impressive, using all sorts of words naturally.", 3: "Vocabulary is next-level today \u2014 like a walking dictionary!" },
+  },
+  grammar: {
+    1: { 1: "Makes frequent grammar mistakes that need correcting.", 2: "Grammar's still a bit shaky, needs more practice.", 3: "Grammar's playing tricks today \u2014 let's untangle it together!" },
+    2: { 1: "Grammar is improving but still inconsistent at times.", 2: "Grammar's getting better, just still a bit up and down.", 3: "Grammar's leveling up slowly but surely!" },
+    3: { 1: "Uses grammar accurately in most sentences.", 2: "Grammar was mostly on point today, nice work.", 3: "Grammar was looking sharp today \u2014 nailed it!" },
+    4: { 1: "Has excellent command of grammar across a range of structures.", 2: "Grammar was basically flawless today, impressive stuff.", 3: "Grammar was perfection today \u2014 absolute rockstar!" },
+  },
+  pronunciation: {
+    1: { 1: "Needs continued practice on pronunciation for clarity.", 2: "Pronunciation still needs a bit more work for clarity.", 3: "Those tricky sounds are still tricky \u2014 let's keep at it!" },
+    2: { 1: "Pronunciation is improving with continued practice.", 2: "Pronunciation's getting clearer, good progress there.", 3: "Pronunciation's leveling up \u2014 sounding clearer already!" },
+    3: { 1: "Has generally clear pronunciation throughout the lesson.", 2: "Pronunciation was clear today, easy to understand.", 3: "Talking nice and clear today \u2014 love it!" },
+    4: { 1: "Has very clear, natural pronunciation.", 2: "Pronunciation was super clear and natural today.", 3: "Sounding smooth and natural today \u2014 total pro!" },
+  },
+  engagement: {
+    1: { 1: "Seemed distracted or low-energy during this lesson.", 2: "Wasn't super focused today, seemed a bit distracted.", 3: "Energy was a little low today \u2014 let's bring the spark back next time!" },
+    2: { 1: "Was somewhat engaged during the lesson.", 2: "Engaged okay today, could use a bit more focus.", 3: "Had some good moments of focus today \u2014 building up!" },
+    3: { 1: "Was engaged and participated well throughout the lesson.", 2: "Was pretty into it today, participated well.", 3: "Bringing great energy today \u2014 loved the participation!" },
+    4: { 1: "Was highly engaged and enthusiastic throughout the lesson.", 2: "Was super into it today, great energy the whole time.", 3: "Energy was through the roof today \u2014 absolute joy to teach!" },
   },
 };
 
@@ -249,13 +161,13 @@ const LEVEL_SUFFIX = { beginner: ' Every small step counts!', intermediate: ' St
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-function autoGenerateComment(level, ageGroup, levelBucket) {
+function autoGenerateComment(level, ageGroup, levelBucket, commentStyle) {
   const style = AGE_STYLE[ageGroup] || AGE_STYLE.adult;
   const opener = pick(style.opener);
   const closer = pick(style.closer) + (LEVEL_SUFFIX[levelBucket] || '');
   const shuffled = [...SKILLS].sort(() => Math.random() - 0.5);
   const chosen = shuffled.slice(0, 3);
-  const sentences = chosen.map((sk) => pick(PHRASE_VARIANTS[ageGroup || 'adult'][sk.key][level]));
+  const sentences = chosen.map((sk) => PHRASE_SETS[sk.key][level][commentStyle || 1]);
   return `${opener} ${sentences.join(' ')} ${closer}`;
 }
 function currentLevelBucket(assessments, studentId) {
@@ -1403,7 +1315,7 @@ function emptyFeedback() {
     vocab: ['', '', '', '', '', ''],
     corrections: [{ wrong: '', correct: '' }, { wrong: '', correct: '' }, { wrong: '', correct: '' }],
     level: 3,
-    phraseChoice: { speaking: 0, listening: 0, reading: 0, vocabulary: 0, grammar: 0, pronunciation: 0, engagement: 0 },
+    commentStyle: 1,
     addedPhrase: { speaking: null, listening: null, reading: null, vocabulary: null, grammar: null, pronunciation: null, engagement: null },
     comment: '',
   };
@@ -1440,9 +1352,9 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
   const addCorrection = () => setFb((p) => ({ ...p, corrections: [...p.corrections, { wrong: '', correct: '' }] }));
   const setLevel = (val) => setFb((p) => ({ ...p, level: val }));
   const setAgeGroup = (val) => setFb((p) => ({ ...p, ageGroup: val }));
-  const setPhraseChoice = (key, idx) => setFb((p) => ({ ...p, phraseChoice: { ...p.phraseChoice, [key]: idx } }));
+  const setCommentStyle = (val) => setFb((p) => ({ ...p, commentStyle: val }));
   const addPhrase = (key) => setFb((p) => {
-    const chosenText = PHRASE_VARIANTS[p.ageGroup || 'adult'][key][p.level][p.phraseChoice[key]];
+    const chosenText = PHRASE_SETS[key][p.level][p.commentStyle || 1];
     const prevText = p.addedPhrase[key];
     let comment = p.comment;
     if (prevText) comment = comment.replace(prevText, '').replace(/  +/g, ' ').trim();
@@ -1457,7 +1369,7 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
   });
 
   const finalize = () => setFinalText(buildFinalText(entry, student, fb));
-  const regenerateComment = () => setFb((p) => ({ ...p, comment: autoGenerateComment(p.level, p.ageGroup || 'adult', levelBucket) }));
+  const regenerateComment = () => setFb((p) => ({ ...p, comment: autoGenerateComment(p.level, p.ageGroup || 'adult', levelBucket, p.commentStyle) }));
   const copy = async () => { try { await navigator.clipboard.writeText(finalText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
   const save = () => onSave({ ...fb, finalText: finalText || buildFinalText(entry, student, fb) });
 
@@ -1532,7 +1444,7 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
 
       <div className="mb-4">
         <div className="text-xs uppercase tracking-wide mb-2" style={{ color: MUTED }}>Overall lesson level</div>
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-3 gap-3">
           <div>
             <div className="text-xs mb-1" style={{ color: MUTED }}>Performance this lesson</div>
             <select value={fb.level} onChange={(e) => setLevel(Number(e.target.value))} className="w-full rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }}>
@@ -1547,19 +1459,25 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
               <option value="adult">Adult</option>
             </select>
           </div>
+          <div>
+            <div className="text-xs mb-1" style={{ color: MUTED }}>Comment style</div>
+            <select value={fb.commentStyle || 1} onChange={(e) => setCommentStyle(Number(e.target.value))} className="w-full rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }}>
+              {[1, 2, 3].map((s) => <option key={s} value={s}>Set {s} — {COMMENT_STYLES[s]}</option>)}
+            </select>
+          </div>
         </div>
         <p className="text-xs mt-1" style={{ color: MUTED }}>Defaults to this student's saved age bracket ({student?.ageGroup || 'adult'}) but you can override it just for this lesson.</p>
       </div>
 
       <div className="mb-4">
-        <div className="text-xs uppercase tracking-wide mb-2" style={{ color: MUTED }}>Performance in this lesson — options below match the Age bracket you picked above; pick a phrasing per skill, then add it to the comment</div>
+        <div className="text-xs uppercase tracking-wide mb-2" style={{ color: MUTED }}>Performance in this lesson — the phrase below matches the Level + Style you picked above; add whichever skills you want to mention</div>
         <div className="space-y-2">
           {SKILLS.map((sk) => (
             <div key={sk.key} className="flex items-center gap-2 flex-wrap">
               <div className="text-xs w-32 shrink-0" style={{ color: MUTED }}>{sk.en}</div>
-              <select value={fb.phraseChoice[sk.key]} onChange={(e) => setPhraseChoice(sk.key, Number(e.target.value))} className="flex-1 rounded-md px-2 py-1.5 text-xs outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT, minWidth: '12rem' }}>
-                {PHRASE_VARIANTS[fb.ageGroup || 'adult'][sk.key][fb.level].map((phrase, idx) => <option key={idx} value={idx}>{phrase}</option>)}
-              </select>
+              <div className="flex-1 text-xs px-2 py-1.5 rounded-md" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT, minWidth: '12rem' }}>
+                {PHRASE_SETS[sk.key][fb.level][fb.commentStyle || 1]}
+              </div>
               <Btn onClick={() => addPhrase(sk.key)}><Plus size={12} /> Add</Btn>
               <Btn variant="danger" onClick={() => removePhrase(sk.key)} disabled={!fb.addedPhrase[sk.key]}><X size={12} /> Remove</Btn>
               {fb.addedPhrase[sk.key] && <span className="text-xs" style={{ color: '#7FCB7F' }}>✔ added</span>}
