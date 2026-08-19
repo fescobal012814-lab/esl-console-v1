@@ -1218,9 +1218,24 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
   const copyWeek = async () => {
     if (!window.confirm(`Copy every booking from ${prettyDate(addDays(weekDates[0], -7))} – ${prettyDate(addDays(weekDates[6], -7))} into this week (${prettyDate(weekDates[0])} – ${prettyDate(weekDates[6])})? Slots already booked this week will be left alone.`)) return;
     setCopying(true);
-    const { copied, skipped } = await copyPreviousWeek(weekDates[0]);
-    setCopying(false);
-    alert(`Copied ${copied} booking(s) from last week.${skipped > 0 ? ` ${skipped} were skipped because that slot was already booked.` : ''}`);
+    try {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timed out')), 15000));
+      const { copied, skipped } = await Promise.race([copyPreviousWeek(weekDates[0]), timeout]);
+      if (copied === 0 && skipped === 0) {
+        alert(`Nothing to copy — last week (${prettyDate(addDays(weekDates[0], -7))} – ${prettyDate(addDays(weekDates[6], -7))}) has no bookings in it.`);
+      } else {
+        alert(`Copied ${copied} booking(s) from last week.${skipped > 0 ? ` ${skipped} were skipped because that slot was already booked.` : ''}`);
+      }
+    } catch (e) {
+      console.error('copyWeek failed', e);
+      if (e && e.message === 'timed out') {
+        alert('This is taking much longer than it should — the connection to the database may be having trouble. Please check your internet connection and try again.');
+      } else {
+        alert('Something went wrong copying last week\u2019s schedule. Please try again in a moment.');
+      }
+    } finally {
+      setCopying(false);
+    }
   };
 
   const toggleCell = (date, time) => {
