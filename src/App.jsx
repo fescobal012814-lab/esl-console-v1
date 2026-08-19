@@ -810,6 +810,34 @@ export default function ESLConsole() {
     applyStatusDelta(entry.studentId, entry.status, newStatus);
     setClassLog((prev) => ({ ...prev, [date]: (prev[date] || []).map((e) => (e.id === entry.id ? { ...e, status: newStatus } : e)) }));
   };
+
+  // Copies every booking from the week starting 7 days before weekStart into the week starting
+  // at weekStart — same weekday, same time, same student, always as a fresh "Scheduled" entry
+  // (regardless of whatever status the original ended up with). Slots already booked in the
+  // target week are left alone rather than overwritten.
+  const copyPreviousWeek = useCallback(async (weekStart) => {
+    const latest = await loadKey('classLog', classLog, true);
+    const next = { ...latest };
+    let copied = 0, skipped = 0;
+    for (let i = 0; i < 7; i++) {
+      const sourceDate = toDateStr(addDays(weekStart, i - 7));
+      const targetDate = toDateStr(addDays(weekStart, i));
+      const sourceList = latest[sourceDate] || [];
+      const targetList = next[targetDate] || [];
+      const targetTimes = new Set(targetList.map((e) => e.chinaTime));
+      const additions = [];
+      sourceList.forEach((e) => {
+        if (targetTimes.has(e.chinaTime)) { skipped += 1; return; }
+        additions.push({ id: uid('ent'), date: targetDate, chinaTime: e.chinaTime, studentId: e.studentId, status: 'scheduled', feedback: null });
+        targetTimes.add(e.chinaTime);
+        copied += 1;
+      });
+      if (additions.length) next[targetDate] = [...targetList, ...additions].sort((a, b) => a.chinaTime.localeCompare(b.chinaTime));
+    }
+    setClassLog(next);
+    await saveKey('classLog', next, true);
+    return { copied, skipped };
+  }, [classLog]);
   const saveFeedback = (date, entryId, feedback) => {
     setClassLog((prev) => ({ ...prev, [date]: (prev[date] || []).map((e) => (e.id === entryId ? { ...e, feedback } : e)) }));
   };
@@ -979,6 +1007,7 @@ export default function ESLConsole() {
             setSlotModal={setSlotModal}
             bookDayEntry={bookDayEntry}
             batchBookEntries={batchBookEntries}
+            copyPreviousWeek={copyPreviousWeek}
           />
         )}
         {activeTab === 'students' && isTeacher && (
@@ -1031,7 +1060,7 @@ export default function ESLConsole() {
 
 /* ---------------- Schedule tab ---------------- */
 
-function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents, view, setView, selectedDate, setSelectedDate, timeFilter, setTimeFilter, filteredSlots, displayTz, compareTz, setCompareTz, classLog, getEntryAt, studentById, students, setSlotModal, bookDayEntry, batchBookEntries }) {
+function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents, view, setView, selectedDate, setSelectedDate, timeFilter, setTimeFilter, filteredSlots, displayTz, compareTz, setCompareTz, classLog, getEntryAt, studentById, students, setSlotModal, bookDayEntry, batchBookEntries, copyPreviousWeek }) {
   const isToday = selectedDate === toDateStr(new Date());
   const monday = mondayOf(selectedDate);
   const weekDates = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(monday, i));
@@ -1085,7 +1114,7 @@ function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents
       {view === 'day' ? (
         <DayGrid date={selectedDate} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} setSlotModal={setSlotModal} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
       ) : (
-        <WeekGrid weekDates={weekDates} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} students={students} companyStudents={companyStudents} setSlotModal={setSlotModal} batchBookEntries={batchBookEntries} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
+        <WeekGrid weekDates={weekDates} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} students={students} companyStudents={companyStudents} setSlotModal={setSlotModal} batchBookEntries={batchBookEntries} copyPreviousWeek={copyPreviousWeek} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
       )}
     </div>
   );
@@ -1174,16 +1203,25 @@ function StudentPicker({ students, value, onChange, placeholder = 'Search studen
   );
 }
 
-function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentById, students, companyStudents, setSlotModal, batchBookEntries, isTeacher, isRep, myStudentId }) {
+function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentById, students, companyStudents, setSlotModal, batchBookEntries, copyPreviousWeek, isTeacher, isRep, myStudentId }) {
   const [bookAs, setBookAs] = useState('');
   const [selfSelecting, setSelfSelecting] = useState(false);
   const [selected, setSelected] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
+  const [copying, setCopying] = useState(false);
 
   const cellKey = (date, time) => `${date}|${time}`;
   const bookingActive = (isTeacher || isRep) ? !!bookAs : selfSelecting;
   const bookingTarget = (isTeacher || isRep) ? bookAs : myStudentId;
   const pickerStudents = isTeacher ? students : companyStudents;
+
+  const copyWeek = async () => {
+    if (!window.confirm(`Copy every booking from ${prettyDate(addDays(weekDates[0], -7))} – ${prettyDate(addDays(weekDates[6], -7))} into this week (${prettyDate(weekDates[0])} – ${prettyDate(weekDates[6])})? Slots already booked this week will be left alone.`)) return;
+    setCopying(true);
+    const { copied, skipped } = await copyPreviousWeek(weekDates[0]);
+    setCopying(false);
+    alert(`Copied ${copied} booking(s) from last week.${skipped > 0 ? ` ${skipped} were skipped because that slot was already booked.` : ''}`);
+  };
 
   const toggleCell = (date, time) => {
     const entry = getEntryAt(date, time);
@@ -1223,6 +1261,9 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
           <Btn variant={selfSelecting ? 'accent' : 'default'} onClick={() => { setSelfSelecting(!selfSelecting); clearSelection(); }}>
             {selfSelecting ? 'Cancel selecting' : 'Select multiple slots to book'}
           </Btn>
+        )}
+        {isTeacher && (
+          <Btn onClick={copyWeek} disabled={copying}>{copying ? 'Copying…' : 'Copy last week\u2019s schedule'}</Btn>
         )}
         {bookingActive && (
           <>
@@ -1437,8 +1478,43 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
   const [fb, setFb] = useState(() => ({ ...emptyFeedback(), ageGroup: student?.ageGroup || 'adult', ...(entry?.feedback || {}) }));
   const [finalText, setFinalText] = useState(entry?.feedback?.finalText || '');
   const [copied, setCopied] = useState(false);
+  const [notesText, setNotesText] = useState('');
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesError, setNotesError] = useState('');
 
   if (!entry) return null;
+
+  const fillFromNotes = async () => {
+    setNotesError('');
+    if (!notesText.trim()) { setNotesError('Paste your notes for this student first.'); return; }
+    setNotesLoading(true);
+    try {
+      const res = await fetch('/api/parse-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-app-secret': import.meta.env.VITE_APP_SECRET || '' },
+        body: JSON.stringify({ notes: notesText }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setNotesError(data.error || 'Something went wrong — please fill the form manually.'); return; }
+      setFb((p) => {
+        const vocab = data.vocab && data.vocab.length ? Array.from({ length: Math.max(6, data.vocab.length) }, (_, i) => data.vocab[i] || '') : p.vocab;
+        const corrections = data.corrections && data.corrections.length
+          ? (data.corrections.length >= 3 ? data.corrections : [...data.corrections, ...Array(3 - data.corrections.length).fill({ wrong: '', correct: '' })])
+          : p.corrections;
+        return {
+          ...p,
+          todayLesson: data.todayLesson || p.todayLesson,
+          nextLesson: data.nextLesson || p.nextLesson,
+          vocab,
+          corrections,
+        };
+      });
+    } catch (e) {
+      setNotesError('Could not reach the parsing service — please fill the form manually.');
+    } finally {
+      setNotesLoading(false);
+    }
+  };
 
   const setVocab = (i, val) => setFb((p) => ({ ...p, vocab: p.vocab.map((v, idx) => (idx === i ? val : v)) }));
   const addVocab = () => setFb((p) => ({ ...p, vocab: [...p.vocab, ''] }));
@@ -1498,6 +1574,17 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
         <button onClick={onClose} className="rounded-md p-1.5 shrink-0" style={{ color: MUTED, border: `1px solid ${BORDER}` }} title="Close">
           <X size={16} />
         </button>
+      </div>
+
+      <div className="mb-4 rounded-xl p-3" style={{ backgroundColor: PAPER_LIGHT, border: `1px solid ${BORDER}` }}>
+        <div className="text-xs uppercase tracking-wide mb-2" style={{ color: MUTED }}>Fill from notes (optional)</div>
+        <textarea value={notesText} onChange={(e) => setNotesText(e.target.value)} rows={3} placeholder="Paste this student's raw shorthand notes here…"
+          className="w-full rounded-md px-2 py-1.5 text-sm outline-none mb-2" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Btn variant="accent" onClick={fillFromNotes} disabled={notesLoading}><Sparkles size={14} /> {notesLoading ? 'Reading notes…' : 'Fill form from notes'}</Btn>
+          <span className="text-xs" style={{ color: MUTED }}>Fills Today's lesson, Next lesson, Vocab, and Corrections below — review everything before saving.</span>
+        </div>
+        {notesError && <p className="text-xs mt-2" style={{ color: RED }}>{notesError}</p>}
       </div>
 
       <div className="grid sm:grid-cols-2 gap-3 mb-4">
