@@ -820,8 +820,8 @@ export default function ESLConsole() {
     const next = { ...latest };
     let copied = 0, skipped = 0;
     for (let i = 0; i < 7; i++) {
-      const sourceDate = toDateStr(addDays(weekStart, i - 7));
-      const targetDate = toDateStr(addDays(weekStart, i));
+      const sourceDate = addDays(weekStart, i - 7);
+      const targetDate = addDays(weekStart, i);
       const sourceList = latest[sourceDate] || [];
       const targetList = next[targetDate] || [];
       const targetTimes = new Set(targetList.map((e) => e.chinaTime));
