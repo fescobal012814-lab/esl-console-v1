@@ -811,6 +811,40 @@ export default function ESLConsole() {
     setClassLog((prev) => ({ ...prev, [date]: (prev[date] || []).map((e) => (e.id === entry.id ? { ...e, status: newStatus } : e)) }));
   };
 
+  // Batch-cancels a specific list of {date, time} slots — only ones still "Scheduled" are touched;
+  // anything already Finished/Absent/etc. is skipped rather than removed, since bulk-undoing
+  // completed lesson history is a much easier mistake to make by accident than bulk-cancelling
+  // lessons that haven't happened yet.
+  const batchCancelEntries = useCallback(async (cells) => {
+    const latest = await loadKey('classLog', classLog, true);
+    const next = { ...latest };
+    let cancelled = 0, skipped = 0;
+    const refunds = [];
+    for (const { date, time } of cells) {
+      const list = next[date] || [];
+      const entry = list.find((e) => e.chinaTime === time);
+      if (!entry || entry.status !== 'scheduled') { skipped += 1; continue; }
+      next[date] = list.filter((e) => e.id !== entry.id);
+      refunds.push({ studentId: entry.studentId, status: entry.status });
+      cancelled += 1;
+    }
+    refunds.forEach(({ studentId, status }) => applyStatusDelta(studentId, status, 'scheduled'));
+    setClassLog(next);
+    await saveKey('classLog', next, true);
+    return { cancelled, skipped };
+  }, [classLog, applyStatusDelta]);
+
+  // Cancels every still-"Scheduled" booking for one student within the given week's dates.
+  const cancelStudentWeek = useCallback((weekDates, studentId) => {
+    const cells = [];
+    weekDates.forEach((date) => {
+      (classLog[date] || []).forEach((e) => {
+        if (e.studentId === studentId && e.status === 'scheduled') cells.push({ date, time: e.chinaTime });
+      });
+    });
+    return batchCancelEntries(cells);
+  }, [classLog, batchCancelEntries]);
+
   // Copies every booking from the week starting 7 days before weekStart into the week starting
   // at weekStart — same weekday, same time, same student, always as a fresh "Scheduled" entry
   // (regardless of whatever status the original ended up with). Slots already booked in the
@@ -1008,6 +1042,8 @@ export default function ESLConsole() {
             bookDayEntry={bookDayEntry}
             batchBookEntries={batchBookEntries}
             copyPreviousWeek={copyPreviousWeek}
+            batchCancelEntries={batchCancelEntries}
+            cancelStudentWeek={cancelStudentWeek}
           />
         )}
         {activeTab === 'students' && isTeacher && (
@@ -1060,7 +1096,7 @@ export default function ESLConsole() {
 
 /* ---------------- Schedule tab ---------------- */
 
-function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents, view, setView, selectedDate, setSelectedDate, timeFilter, setTimeFilter, filteredSlots, displayTz, compareTz, setCompareTz, classLog, getEntryAt, studentById, students, setSlotModal, bookDayEntry, batchBookEntries, copyPreviousWeek }) {
+function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents, view, setView, selectedDate, setSelectedDate, timeFilter, setTimeFilter, filteredSlots, displayTz, compareTz, setCompareTz, classLog, getEntryAt, studentById, students, setSlotModal, bookDayEntry, batchBookEntries, copyPreviousWeek, batchCancelEntries, cancelStudentWeek }) {
   const isToday = selectedDate === toDateStr(new Date());
   const monday = mondayOf(selectedDate);
   const weekDates = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(monday, i));
@@ -1114,7 +1150,7 @@ function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents
       {view === 'day' ? (
         <DayGrid date={selectedDate} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} setSlotModal={setSlotModal} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
       ) : (
-        <WeekGrid weekDates={weekDates} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} students={students} companyStudents={companyStudents} setSlotModal={setSlotModal} batchBookEntries={batchBookEntries} copyPreviousWeek={copyPreviousWeek} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
+        <WeekGrid weekDates={weekDates} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} students={students} companyStudents={companyStudents} setSlotModal={setSlotModal} batchBookEntries={batchBookEntries} copyPreviousWeek={copyPreviousWeek} batchCancelEntries={batchCancelEntries} cancelStudentWeek={cancelStudentWeek} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
       )}
     </div>
   );
@@ -1203,12 +1239,17 @@ function StudentPicker({ students, value, onChange, placeholder = 'Search studen
   );
 }
 
-function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentById, students, companyStudents, setSlotModal, batchBookEntries, copyPreviousWeek, isTeacher, isRep, myStudentId }) {
+function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentById, students, companyStudents, setSlotModal, batchBookEntries, batchCancelEntries, cancelStudentWeek, copyPreviousWeek, isTeacher, isRep, myStudentId }) {
   const [bookAs, setBookAs] = useState('');
   const [selfSelecting, setSelfSelecting] = useState(false);
   const [selected, setSelected] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [cancelMode, setCancelMode] = useState(false);
+  const [cancelSelected, setCancelSelected] = useState(() => new Set());
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelStudentPick, setCancelStudentPick] = useState('');
+  const [cancelingStudentWeek, setCancelingStudentWeek] = useState(false);
 
   const cellKey = (date, time) => `${date}|${time}`;
   const bookingActive = (isTeacher || isRep) ? !!bookAs : selfSelecting;
@@ -1240,6 +1281,16 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
 
   const toggleCell = (date, time) => {
     const entry = getEntryAt(date, time);
+    if (cancelMode) {
+      if (!entry || entry.status !== 'scheduled') return; // only upcoming, unmodified bookings are bulk-cancellable
+      const key = cellKey(date, time);
+      setCancelSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key); else next.add(key);
+        return next;
+      });
+      return;
+    }
     if (entry) { setSlotModal({ date, time }); return; }
     if (!bookingActive) { setSlotModal({ date, time }); return; }
     const key = cellKey(date, time);
@@ -1260,6 +1311,43 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
     setBusy(false);
     setSelected(new Set());
     if (skipped > 0) alert(`Booked ${booked} slot(s). ${skipped} were already taken and were skipped.`);
+  };
+
+  const withTimeout = (promise) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('timed out')), 15000))]);
+
+  const commitCancel = async () => {
+    if (cancelSelected.size === 0) return;
+    if (!window.confirm(`Cancel ${cancelSelected.size} selected booking(s)? This cannot be undone.`)) return;
+    setCancelBusy(true);
+    try {
+      const cells = [...cancelSelected].map((key) => { const [date, time] = key.split('|'); return { date, time }; });
+      const { cancelled, skipped } = await withTimeout(batchCancelEntries(cells));
+      alert(`Cancelled ${cancelled} booking(s).${skipped > 0 ? ` ${skipped} could not be cancelled (already changed by someone else).` : ''}`);
+      setCancelSelected(new Set());
+      setCancelMode(false);
+    } catch (e) {
+      console.error('commitCancel failed', e);
+      alert(e && e.message === 'timed out' ? 'This is taking too long — please check your connection and try again.' : 'Something went wrong cancelling those bookings. Please try again.');
+    } finally {
+      setCancelBusy(false);
+    }
+  };
+
+  const cancelWholeStudentWeek = async () => {
+    if (!cancelStudentPick) return;
+    const studentName = studentById[cancelStudentPick]?.name || 'this student';
+    if (!window.confirm(`Cancel ALL of ${studentName}'s scheduled bookings for ${prettyDate(weekDates[0])} – ${prettyDate(weekDates[6])}? This cannot be undone.`)) return;
+    setCancelingStudentWeek(true);
+    try {
+      const { cancelled } = await withTimeout(cancelStudentWeek(weekDates, cancelStudentPick));
+      alert(cancelled > 0 ? `Cancelled ${cancelled} booking(s) for ${studentName} this week.` : `${studentName} had no scheduled bookings this week to cancel.`);
+      setCancelStudentPick('');
+    } catch (e) {
+      console.error('cancelWholeStudentWeek failed', e);
+      alert(e && e.message === 'timed out' ? 'This is taking too long — please check your connection and try again.' : 'Something went wrong. Please try again.');
+    } finally {
+      setCancelingStudentWeek(false);
+    }
   };
 
   return (
@@ -1290,6 +1378,25 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
         )}
       </div>
 
+      {isTeacher && (
+        <div className="mb-3 rounded-xl p-3 flex flex-wrap items-center gap-2" style={{ backgroundColor: PAPER, border: `1px solid ${BORDER}` }}>
+          <Btn variant={cancelMode ? 'danger' : 'default'} onClick={() => { setCancelMode(!cancelMode); setCancelSelected(new Set()); }}>
+            {cancelMode ? 'Stop cancel-selecting' : 'Cancel multiple bookings'}
+          </Btn>
+          {cancelMode && (
+            <>
+              <span className="text-xs" style={{ color: MUTED }}>{cancelSelected.size} selected — click Scheduled bookings below</span>
+              <Btn variant="danger" onClick={commitCancel} disabled={cancelSelected.size === 0 || cancelBusy}>{cancelBusy ? 'Cancelling…' : `Cancel ${cancelSelected.size} booking(s)`}</Btn>
+            </>
+          )}
+          <div className="flex-1" />
+          <div className="w-56">
+            <StudentPicker students={students} value={cancelStudentPick} onChange={setCancelStudentPick} placeholder="Cancel all bookings for…" />
+          </div>
+          <Btn variant="danger" disabled={!cancelStudentPick || cancelingStudentWeek} onClick={cancelWholeStudentWeek}>{cancelingStudentWeek ? 'Cancelling…' : 'Cancel their week'}</Btn>
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-xl" style={{ border: `1px solid ${BORDER}` }}>
         <div style={{ minWidth: compareTz ? '920px' : '820px' }}>
           <div className={`grid ${compareTz ? 'grid-cols-9' : 'grid-cols-8'}`} style={{ borderBottom: `1px solid ${BORDER}` }}>
@@ -1312,17 +1419,21 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
                 const repCanSee = isRep && student?.category === 'company';
                 const hideName = !isTeacher && entry && !isMine && !repCanSee;
                 const isSelected = selected.has(cellKey(date, time));
+                const isCancelSelected = cancelSelected.has(cellKey(date, time));
+                const cancelable = cancelMode && entry && entry.status === 'scheduled';
                 return (
                   <div key={date} onClick={() => toggleCell(date, time)}
                     className="px-1.5 py-1.5 text-xs cursor-pointer flex items-center justify-center text-center gap-1"
                     style={{
-                      backgroundColor: isSelected ? ACCENT + '33' : (isMine ? '#1E3A2A' : (student ? student.color + '22' : 'transparent')),
+                      backgroundColor: isCancelSelected ? '#4a1f1f' : (isSelected ? ACCENT + '33' : (isMine ? '#1E3A2A' : (student ? student.color + '22' : 'transparent'))),
                       borderLeft: isMine ? '2px solid #7FCB7F' : `1px solid ${BORDER}`,
-                      outline: isSelected ? `1px solid ${ACCENT}` : 'none',
+                      outline: isCancelSelected ? `1px solid ${RED}` : (isSelected ? `1px solid ${ACCENT}` : 'none'),
+                      opacity: cancelMode && entry && !cancelable ? 0.5 : 1,
                     }}>
                     {student ? (
-                      <span className="flex items-center gap-1" style={isMine ? { color: '#7FCB7F', fontWeight: 600 } : undefined}>
+                      <span className="flex items-center gap-1" style={isCancelSelected ? { color: RED, fontWeight: 600 } : (isMine ? { color: '#7FCB7F', fontWeight: 600 } : undefined)}>
                         {isMine && <Check size={12} />}
+                        {isCancelSelected && <X size={12} />}
                         {hideName ? 'Booked' : student.name}
                       </span>
                     ) : isSelected ? <span style={{ color: ACCENT }}>✓</span> : <span style={{ color: BORDER }}>·</span>}
