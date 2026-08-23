@@ -278,6 +278,17 @@ function hhmmToMinutes(t) { const [h, m] = t.split(':').map(Number); return h * 
 function displayTime(t) { return t.replace(/^0/, ''); }
 function slotRangeLabel(t) { const start = hhmmToMinutes(t); return `${displayTime(minutesToHHMM(start))}-${displayTime(minutesToHHMM(start + 25))}`; }
 
+// How many hours from right now until a PH-anchored slot actually starts. Negative means it's
+// already in the past. Used for the 24-hour late-cancellation policy.
+const LATE_CHANGE_HOURS = 24;
+const FREE_RESCHEDULES_PER_MONTH = 2;
+function hoursUntilSlot(dateStr, timeStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [hh, mm] = timeStr.split(':').map(Number);
+  const slotUTC = new Date(Date.UTC(y, m - 1, d, hh - 8, mm || 0));
+  return (slotUTC.getTime() - Date.now()) / (1000 * 60 * 60);
+}
+
 // the underlying grid is anchored to PH time (UTC+8, no DST) since that's the teacher's real clock.
 function convertAnchorTime(dateStr, timeStr, targetTz) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -677,6 +688,7 @@ export default function ESLConsole() {
   const [activeTab, setActiveTab] = useState('schedule');
   const [slotModal, setSlotModal] = useState(null);
   const [feedbackTarget, setFeedbackTarget] = useState(null);
+  const [reschedulingFrom, setReschedulingFrom] = useState(null); // { date, time, entryId, studentId } | null
   const companyStudents = useMemo(() => students.filter((s) => s.category === 'company'), [students]);
   const skipSave = useRef(true);
 
@@ -771,14 +783,14 @@ export default function ESLConsole() {
   }, [studentById]);
 
   // safe single booking: re-reads latest shared data right before writing
-  const bookDayEntry = useCallback(async (date, time, studentId) => {
+  const bookDayEntry = useCallback(async (date, time, studentId, extra) => {
     const latest = await loadKey('classLog', classLog, true);
     const list = latest[date] || [];
     if (list.find((e) => e.chinaTime === time)) {
       setClassLog(latest);
       return { ok: false };
     }
-    const entry = { id: uid('ent'), date, chinaTime: time, studentId, status: 'scheduled', feedback: null };
+    const entry = { id: uid('ent'), date, chinaTime: time, studentId, status: 'scheduled', feedback: null, ...(extra || {}) };
     const next = { ...latest, [date]: [...list, entry].sort((a, b) => a.chinaTime.localeCompare(b.chinaTime)) };
     setClassLog(next);
     await saveKey('classLog', next, true);
@@ -810,6 +822,30 @@ export default function ESLConsole() {
     applyStatusDelta(entry.studentId, entry.status, newStatus);
     setClassLog((prev) => ({ ...prev, [date]: (prev[date] || []).map((e) => (e.id === entry.id ? { ...e, status: newStatus } : e)) }));
   };
+
+  // Counts how many free reschedules a student has already used in the current calendar month,
+  // by looking for entries tagged with a rescheduledAt timestamp from that month.
+  const countReschedulesThisMonth = useCallback((studentId) => {
+    const now = new Date();
+    let count = 0;
+    Object.values(classLog).forEach((list) => {
+      list.forEach((e) => {
+        if (e.studentId !== studentId || !e.rescheduledAt) return;
+        const d = new Date(e.rescheduledAt);
+        if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) count += 1;
+      });
+    });
+    return count;
+  }, [classLog]);
+
+  // Moves a booking from its old slot to a new one. Always free (no lesson deducted) — eligibility
+  // for whether this was allowed (the 2-per-month quota) is checked before this is ever called.
+  const commitReschedule = useCallback(async (from, toDate, toTime) => {
+    const res = await bookDayEntry(toDate, toTime, from.studentId, { rescheduledAt: Date.now() });
+    if (!res.ok) return { ok: false };
+    removeDayEntry(from.date, from.entryId, from.studentId, 'scheduled');
+    return { ok: true };
+  }, [bookDayEntry]);
 
   // Batch-cancels a specific list of {date, time} slots — only ones still "Scheduled" are touched;
   // anything already Finished/Absent/etc. is skipped rather than removed, since bulk-undoing
@@ -1044,6 +1080,7 @@ export default function ESLConsole() {
             copyPreviousWeek={copyPreviousWeek}
             batchCancelEntries={batchCancelEntries}
             cancelStudentWeek={cancelStudentWeek}
+            reschedulingFrom={reschedulingFrom} setReschedulingFrom={setReschedulingFrom} commitReschedule={commitReschedule}
           />
         )}
         {activeTab === 'students' && isTeacher && (
@@ -1075,6 +1112,12 @@ export default function ESLConsole() {
           onStatus={(status) => setEntryStatus(slotModal.date, getEntryAt(slotModal.date, slotModal.time), status)}
           onRemoveDay={() => { const e = getEntryAt(slotModal.date, slotModal.time); removeDayEntry(slotModal.date, e.id, e.studentId, e.status); setSlotModal(null); }}
           onOpenFeedback={() => { const e = getEntryAt(slotModal.date, slotModal.time); setFeedbackTarget({ date: slotModal.date, entryId: e.id }); setSlotModal(null); }}
+          reschedulesUsed={countReschedulesThisMonth(myStudentId)}
+          onReschedule={() => {
+            const e = getEntryAt(slotModal.date, slotModal.time);
+            setReschedulingFrom({ date: slotModal.date, time: slotModal.time, entryId: e.id, studentId: e.studentId });
+            setSlotModal(null);
+          }}
         />
       )}
 
@@ -1096,7 +1139,7 @@ export default function ESLConsole() {
 
 /* ---------------- Schedule tab ---------------- */
 
-function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents, view, setView, selectedDate, setSelectedDate, timeFilter, setTimeFilter, filteredSlots, displayTz, compareTz, setCompareTz, classLog, getEntryAt, studentById, students, setSlotModal, bookDayEntry, batchBookEntries, copyPreviousWeek, batchCancelEntries, cancelStudentWeek }) {
+function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents, view, setView, selectedDate, setSelectedDate, timeFilter, setTimeFilter, filteredSlots, displayTz, compareTz, setCompareTz, classLog, getEntryAt, studentById, students, setSlotModal, bookDayEntry, batchBookEntries, copyPreviousWeek, batchCancelEntries, cancelStudentWeek, reschedulingFrom, setReschedulingFrom, commitReschedule }) {
   const isToday = selectedDate === toDateStr(new Date());
   const monday = mondayOf(selectedDate);
   const weekDates = [0, 1, 2, 3, 4, 5, 6].map((i) => addDays(monday, i));
@@ -1106,8 +1149,24 @@ function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents
   const primaryTz = (isTeacher || isRep) ? displayTz : (DISPLAY_TZ_OPTIONS.find((o) => o.id === (myStudent?.homeTz || 'ph')) || DISPLAY_TZ_OPTIONS[0]);
   const secondaryTz = (isTeacher || isRep) ? compareTz : null;
 
+  const doReschedule = async (toDate, toTime) => {
+    const res = await commitReschedule(reschedulingFrom, toDate, toTime);
+    setReschedulingFrom(null);
+    if (res.ok) alert('Your lesson has been moved to the new time.');
+    else alert('Sorry, that slot was just taken. Please pick a different one.');
+  };
+
   return (
     <div>
+      {reschedulingFrom && !isTeacher && !isRep && (
+        <div className="mb-4 rounded-xl p-3 flex items-center gap-3 flex-wrap" style={{ backgroundColor: PAPER_LIGHT, border: `1px solid ${ACCENT}` }}>
+          <CalendarDays size={16} style={{ color: ACCENT }} />
+          <span className="text-sm">Rescheduling your lesson from {prettyDate(reschedulingFrom.date)} {slotRangeLabel(reschedulingFrom.time)} — click an open slot below to move it there.</span>
+          <div className="flex-1" />
+          <Btn onClick={() => setReschedulingFrom(null)}>Cancel rescheduling</Btn>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
           {['day', 'week'].map((v) => (
@@ -1148,15 +1207,15 @@ function ScheduleTab({ isTeacher, isRep, myStudentId, myStudent, companyStudents
       </div>
 
       {view === 'day' ? (
-        <DayGrid date={selectedDate} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} setSlotModal={setSlotModal} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
+        <DayGrid date={selectedDate} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} setSlotModal={setSlotModal} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} reschedulingFrom={reschedulingFrom} onRescheduleTo={doReschedule} />
       ) : (
-        <WeekGrid weekDates={weekDates} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} students={students} companyStudents={companyStudents} setSlotModal={setSlotModal} batchBookEntries={batchBookEntries} copyPreviousWeek={copyPreviousWeek} batchCancelEntries={batchCancelEntries} cancelStudentWeek={cancelStudentWeek} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} />
+        <WeekGrid weekDates={weekDates} slots={filteredSlots} displayTz={primaryTz} compareTz={secondaryTz} getEntryAt={getEntryAt} studentById={studentById} students={students} companyStudents={companyStudents} setSlotModal={setSlotModal} batchBookEntries={batchBookEntries} copyPreviousWeek={copyPreviousWeek} batchCancelEntries={batchCancelEntries} cancelStudentWeek={cancelStudentWeek} isTeacher={isTeacher} isRep={isRep} myStudentId={myStudentId} reschedulingFrom={reschedulingFrom} onRescheduleTo={doReschedule} />
       )}
     </div>
   );
 }
 
-function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, setSlotModal, isTeacher, isRep, myStudentId }) {
+function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, setSlotModal, isTeacher, isRep, myStudentId, reschedulingFrom, onRescheduleTo }) {
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
       {slots.map((time) => {
@@ -1166,10 +1225,24 @@ function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, s
         const isMine = entry && entry.studentId === myStudentId;
         const repCanSee = isRep && student?.category === 'company';
         const hideName = !isTeacher && entry && !isMine && !repCanSee;
+        const isRescheduleOrigin = reschedulingFrom && reschedulingFrom.date === date && reschedulingFrom.time === time;
+        const isReschedulable = reschedulingFrom && !entry && !isRescheduleOrigin;
+        const handleClick = () => {
+          if (reschedulingFrom) {
+            if (isReschedulable) onRescheduleTo(date, time);
+            return;
+          }
+          setSlotModal({ date, time });
+        };
         return (
-          <div key={time} onClick={() => setSlotModal({ date, time })}
+          <div key={time} onClick={handleClick}
             className="flex items-center gap-3 px-4 py-2 cursor-pointer"
-            style={{ backgroundColor: isMine ? '#1E3A2A' : (entry ? PAPER_LIGHTER : PAPER), borderTop: `1px solid ${BORDER}`, borderLeft: isMine ? '3px solid #7FCB7F' : '3px solid transparent' }}>
+            style={{
+              backgroundColor: isRescheduleOrigin ? '#3a2f1e' : (isReschedulable ? '#1E2E3A' : (isMine ? '#1E3A2A' : (entry ? PAPER_LIGHTER : PAPER))),
+              borderTop: `1px solid ${BORDER}`,
+              borderLeft: isMine ? '3px solid #7FCB7F' : (isReschedulable ? '3px solid ' + ACCENT : '3px solid transparent'),
+              opacity: reschedulingFrom && entry && !isRescheduleOrigin ? 0.5 : 1,
+            }}>
             <div className="w-24 font-mono text-sm">{displaySlotLabel(date, time, displayTz)}</div>
             {compareTz && (
               <div className="w-24 font-mono text-xs" style={{ color: MUTED }}>
@@ -1183,9 +1256,10 @@ function DayGrid({ date, slots, displayTz, compareTz, getEntryAt, studentById, s
                 <span className="font-medium" style={isMine ? { color: '#7FCB7F' } : undefined}>{hideName ? 'Booked' : (student ? student.name : 'Unknown')}</span>
                 {!hideName && cat && <Pill color={cat.color}>{cat.label}</Pill>}
                 {isTeacher && <Pill color={STATUS_META[entry.status].color}>{STATUS_META[entry.status].label}</Pill>}
+                {isRescheduleOrigin && <span className="text-xs" style={{ color: ACCENT }}>← moving this one</span>}
               </>
             ) : (
-              <span className="text-sm" style={{ color: MUTED }}>Open — click to book</span>
+              <span className="text-sm" style={{ color: isReschedulable ? ACCENT : MUTED }}>{isReschedulable ? 'Click to move your lesson here' : 'Open — click to book'}</span>
             )}
           </div>
         );
@@ -1239,7 +1313,7 @@ function StudentPicker({ students, value, onChange, placeholder = 'Search studen
   );
 }
 
-function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentById, students, companyStudents, setSlotModal, batchBookEntries, batchCancelEntries, cancelStudentWeek, copyPreviousWeek, isTeacher, isRep, myStudentId }) {
+function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentById, students, companyStudents, setSlotModal, batchBookEntries, batchCancelEntries, cancelStudentWeek, copyPreviousWeek, isTeacher, isRep, myStudentId, reschedulingFrom, onRescheduleTo }) {
   const [bookAs, setBookAs] = useState('');
   const [selfSelecting, setSelfSelecting] = useState(false);
   const [selected, setSelected] = useState(() => new Set());
@@ -1281,6 +1355,11 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
 
   const toggleCell = (date, time) => {
     const entry = getEntryAt(date, time);
+    if (reschedulingFrom) {
+      const isOrigin = reschedulingFrom.date === date && reschedulingFrom.time === time;
+      if (!entry && !isOrigin) onRescheduleTo(date, time);
+      return;
+    }
     if (cancelMode) {
       if (!entry || entry.status !== 'scheduled') return; // only upcoming, unmodified bookings are bulk-cancellable
       const key = cellKey(date, time);
@@ -1421,14 +1500,16 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
                 const isSelected = selected.has(cellKey(date, time));
                 const isCancelSelected = cancelSelected.has(cellKey(date, time));
                 const cancelable = cancelMode && entry && entry.status === 'scheduled';
+                const isRescheduleOrigin = reschedulingFrom && reschedulingFrom.date === date && reschedulingFrom.time === time;
+                const isReschedulable = reschedulingFrom && !entry && !isRescheduleOrigin;
                 return (
                   <div key={date} onClick={() => toggleCell(date, time)}
                     className="px-1.5 py-1.5 text-xs cursor-pointer flex items-center justify-center text-center gap-1"
                     style={{
-                      backgroundColor: isCancelSelected ? '#4a1f1f' : (isSelected ? ACCENT + '33' : (isMine ? '#1E3A2A' : (student ? student.color + '22' : 'transparent'))),
-                      borderLeft: isMine ? '2px solid #7FCB7F' : `1px solid ${BORDER}`,
+                      backgroundColor: isRescheduleOrigin ? '#3a2f1e' : (isReschedulable ? '#1E2E3A' : (isCancelSelected ? '#4a1f1f' : (isSelected ? ACCENT + '33' : (isMine ? '#1E3A2A' : (student ? student.color + '22' : 'transparent'))))),
+                      borderLeft: isReschedulable ? `2px solid ${ACCENT}` : (isMine ? '2px solid #7FCB7F' : `1px solid ${BORDER}`),
                       outline: isCancelSelected ? `1px solid ${RED}` : (isSelected ? `1px solid ${ACCENT}` : 'none'),
-                      opacity: cancelMode && entry && !cancelable ? 0.5 : 1,
+                      opacity: (cancelMode && entry && !cancelable) || (reschedulingFrom && entry && !isRescheduleOrigin) ? 0.5 : 1,
                     }}>
                     {student ? (
                       <span className="flex items-center gap-1" style={isCancelSelected ? { color: RED, fontWeight: 600 } : (isMine ? { color: '#7FCB7F', fontWeight: 600 } : undefined)}>
@@ -1436,7 +1517,7 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
                         {isCancelSelected && <X size={12} />}
                         {hideName ? 'Booked' : student.name}
                       </span>
-                    ) : isSelected ? <span style={{ color: ACCENT }}>✓</span> : <span style={{ color: BORDER }}>·</span>}
+                    ) : isReschedulable ? <span style={{ color: ACCENT }}>Move here</span> : (isSelected ? <span style={{ color: ACCENT }}>✓</span> : <span style={{ color: BORDER }}>·</span>)}
                   </div>
                 );
               })}
@@ -1450,7 +1531,7 @@ function WeekGrid({ weekDates, slots, displayTz, compareTz, getEntryAt, studentB
 
 /* ---------------- Slot modal ---------------- */
 
-function SlotModal({ ctx, isTeacher, isRep, myStudentId, companyStudents, displayTz, compareTz, students, studentById, entry, onClose, onBookDay, onStatus, onRemoveDay, onOpenFeedback }) {
+function SlotModal({ ctx, isTeacher, isRep, myStudentId, companyStudents, displayTz, compareTz, students, studentById, entry, onClose, onBookDay, onStatus, onRemoveDay, onOpenFeedback, reschedulesUsed, onReschedule }) {
   const [pick, setPick] = useState('');
   const student = entry ? studentById[entry.studentId] : null;
   const isMine = entry && entry.studentId === myStudentId;
@@ -1511,7 +1592,25 @@ function SlotModal({ ctx, isTeacher, isRep, myStudentId, companyStudents, displa
           <div>
             <p className="text-sm mb-3">This is your lesson.</p>
             {entry.status === 'scheduled' ? (
-              <Btn variant="danger" onClick={onRemoveDay}><Trash2 size={14} /> Cancel my lesson</Btn>
+              <div className="flex flex-col gap-2 items-start">
+                <Btn variant="danger" onClick={() => {
+                  const hoursLeft = hoursUntilSlot(ctx.date, ctx.time);
+                  if (hoursLeft < LATE_CHANGE_HOURS) {
+                    if (window.confirm(`This lesson starts in less than ${LATE_CHANGE_HOURS} hours, so cancelling now counts as a late cancellation — 0.5 of a lesson will be deducted from your package, per policy. Cancel anyway?`)) {
+                      onStatus('absent');
+                    }
+                  } else {
+                    if (window.confirm('Cancel this lesson? Since it\u2019s more than 24 hours away, this is a free cancellation.')) {
+                      onRemoveDay();
+                    }
+                  }
+                }}><Trash2 size={14} /> Cancel my lesson</Btn>
+                {reschedulesUsed < FREE_RESCHEDULES_PER_MONTH ? (
+                  <Btn onClick={onReschedule}><CalendarDays size={14} /> Reschedule ({FREE_RESCHEDULES_PER_MONTH - reschedulesUsed} free this month)</Btn>
+                ) : (
+                  <p className="text-xs" style={{ color: MUTED }}>You've used your {FREE_RESCHEDULES_PER_MONTH} free reschedules this month — use Cancel instead if you need to change this lesson.</p>
+                )}
+              </div>
             ) : (
               <>
                 <Pill color={STATUS_META[entry.status].color}>{STATUS_META[entry.status].label}</Pill>
