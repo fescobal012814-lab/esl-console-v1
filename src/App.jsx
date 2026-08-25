@@ -41,13 +41,15 @@ const STATUS_META = {
 };
 
 const SKILLS = [
+  { key: 'engagement', en: 'Class Engagement', zh: '课堂参与' },
   { key: 'speaking', en: 'Speaking', zh: '口语' },
   { key: 'listening', en: 'Listening', zh: '听力' },
+  { key: 'listeningComprehension', en: 'Listening Comprehension', zh: '听力理解' },
   { key: 'reading', en: 'Reading', zh: '阅读' },
+  { key: 'readingComprehension', en: 'Reading Comprehension', zh: '阅读理解' },
   { key: 'vocabulary', en: 'Vocabulary', zh: '词汇' },
   { key: 'grammar', en: 'Grammar', zh: '语法' },
   { key: 'pronunciation', en: 'Pronunciation', zh: '发音' },
-  { key: 'engagement', en: 'Class Engagement', zh: '课堂参与' },
 ];
 const TIER_LABELS = { 1: 'Needs Improvement', 2: 'Good', 3: 'Very Good', 4: 'Excellent' };
 
@@ -106,11 +108,23 @@ const PHRASE_VARIANTS = {
       3: { 1: ["Followed along really well today!", "Understood instructions quickly \u2014 awesome!", "Picked up on lots of details while listening."], 2: ["Understood almost everything today \u2014 awesome listening!", "Really great at following along today!", "Listening was strong all through the lesson!"], 3: ["Listened so well today, barely needed any help!", "Understanding everything really quickly today \u2014 awesome!", "Listening skills are looking really strong now!"] },
       4: { 1: ["Understood everything with total ease today!", "Followed fast talking without any trouble!", "Excellent listening the whole lesson!"], 2: ["Understood everything today, like a listening champion!", "Amazing listening today \u2014 nothing was missed!", "Perfect listening all lesson long, wow!"], 3: ["Listening was incredible today \u2014 understood every single word!", "Such amazing listening skills today, well done!", "Nothing gets past this student's ears today!"] },
     },
+    listeningComprehension: {
+      1: { 1: ["Placeholder listening comprehension phrase 1 (level 1, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 1, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 1, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 1, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 1, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 1, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 1, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 1, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 1, set 3) — real content coming soon."] },
+      2: { 1: ["Placeholder listening comprehension phrase 1 (level 2, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 2, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 2, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 2, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 2, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 2, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 2, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 2, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 2, set 3) — real content coming soon."] },
+      3: { 1: ["Placeholder listening comprehension phrase 1 (level 3, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 3, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 3, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 3, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 3, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 3, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 3, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 3, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 3, set 3) — real content coming soon."] },
+      4: { 1: ["Placeholder listening comprehension phrase 1 (level 4, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 4, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 4, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 4, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 4, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 4, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 4, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 4, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 4, set 3) — real content coming soon."] },
+    },
     reading: {
       1: { 1: ["Reading new words is still tricky right now.", "Reading is slow and needs more help.", "Found it hard to sound out new words today."], 2: ["Reading is still tricky, needs lots more practice.", "Sounding out words is still hard right now.", "Needs a lot of help reading today."], 3: ["Had trouble reading today, let's keep practicing.", "Reading is still a challenge right now.", "Needed lots of help with today's words."] },
       2: { 1: ["Reading is getting better with practice!", "Read most of it with a little help.", "Getting better at sounding out new words!"], 2: ["Getting better at reading \u2014 nice improvement!", "Sounding out more words correctly now!", "Reading is coming along little by little!"], 3: ["Read pretty well today, great job!", "Understanding more of the story today!", "Reading skills are really growing!"] },
       3: { 1: ["Read with great confidence today!", "Handled today's reading really well!", "Good reading and understanding throughout!"], 2: ["Read really well today, awesome work!", "Understood the story really well today!", "Reading is looking strong these days!"], 3: ["Reading is really strong now, amazing job!", "Barely needed help reading today, so proud!", "Reading skills are getting really impressive!"] },
       4: { 1: ["Read fluently and even caught the tricky details!", "Excellent understanding of today's reading!", "Read like a natural \u2014 wonderful job!"], 2: ["Reading like a superstar today, wow!", "Understood everything in the story, amazing!", "Perfect reading today, so impressive!"], 3: ["Reading today was incredible, top marks!", "Such a great reader today, well done!", "Nothing tricky about today's reading, amazing job!"] },
+    },
+    readingComprehension: {
+      1: { 1: ["Placeholder reading comprehension phrase 1 (level 1, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 1, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 1, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 1, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 1, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 1, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 1, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 1, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 1, set 3) — real content coming soon."] },
+      2: { 1: ["Placeholder reading comprehension phrase 1 (level 2, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 2, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 2, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 2, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 2, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 2, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 2, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 2, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 2, set 3) — real content coming soon."] },
+      3: { 1: ["Placeholder reading comprehension phrase 1 (level 3, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 3, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 3, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 3, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 3, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 3, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 3, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 3, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 3, set 3) — real content coming soon."] },
+      4: { 1: ["Placeholder reading comprehension phrase 1 (level 4, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 4, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 4, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 4, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 4, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 4, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 4, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 4, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 4, set 3) — real content coming soon."] },
     },
     vocabulary: {
       1: { 1: ["New words are still tricky and need more practice.", "Had trouble remembering recent words today.", "Needs more practice with new words."], 2: ["Still learning lots of new words, keep going!", "Vocabulary is still pretty small right now.", "Needs more practice remembering new words."], 3: ["Forgetting a lot of words today, needs practice.", "Still working on remembering new words.", "Needs lots of help with vocabulary right now."] },
@@ -150,11 +164,23 @@ const PHRASE_VARIANTS = {
       3: { 1: ["Followed most of the spoken content well today.", "Understood instructions quickly, barely needed repeats.", "Picked up on details well throughout the lesson."], 2: ["Followed spoken content well throughout the lesson.", "Comprehension was solid across most of today's material.", "Picked up on details without needing repeats."], 3: ["Comprehension held up well even with faster speech.", "Rarely needed anything repeated today.", "Listening was a clear strength this lesson."] },
       4: { 1: ["Understood spoken English with total ease today.", "Followed fast, natural speech with no trouble at all.", "Excellent listening the entire lesson."], 2: ["Understood everything today with zero repetition needed.", "Listening comprehension was flawless this lesson.", "Picked up on every nuance in conversation today."], 3: ["Listening today was genuinely outstanding from start to finish.", "Processed fast, natural speech without any issue.", "This was an excellent lesson for comprehension."] },
     },
+    listeningComprehension: {
+      1: { 1: ["Placeholder listening comprehension phrase 1 (level 1, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 1, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 1, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 1, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 1, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 1, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 1, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 1, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 1, set 3) — real content coming soon."] },
+      2: { 1: ["Placeholder listening comprehension phrase 1 (level 2, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 2, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 2, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 2, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 2, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 2, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 2, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 2, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 2, set 3) — real content coming soon."] },
+      3: { 1: ["Placeholder listening comprehension phrase 1 (level 3, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 3, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 3, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 3, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 3, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 3, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 3, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 3, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 3, set 3) — real content coming soon."] },
+      4: { 1: ["Placeholder listening comprehension phrase 1 (level 4, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 4, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 4, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 4, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 4, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 4, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 4, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 4, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 4, set 3) — real content coming soon."] },
+    },
     reading: {
       1: { 1: ["Needed a lot of support decoding new words today.", "Reading's still slow and needs more help.", "Struggles to sound out unfamiliar words."], 2: ["Reading fluency is still quite limited right now.", "Needed a lot of help decoding today's text.", "Reading comprehension needs considerably more support."], 3: ["Struggled through most of today's reading passage.", "Needed frequent help with unfamiliar words.", "Reading remains an area needing real focus."] },
       2: { 1: ["Reading's improving with regular practice.", "Got through most of the passage with some help.", "Getting better at sounding out new words."], 2: ["Reading fluency is gradually picking up.", "Handling more of the text independently now.", "Needed less help than previous lessons."], 3: ["Managed most of the passage with light support.", "Reading comprehension is noticeably improving.", "Handled today's text reasonably well overall."] },
       3: { 1: ["Read confidently with good comprehension today.", "Handled today's passage well with minimal help.", "Good reading fluency and understanding throughout."], 2: ["Read confidently through most of today's material.", "Comprehension was solid across the passage.", "Handled today's text with good accuracy."], 3: ["Handled today's passage with real confidence.", "Rarely needed help with unfamiliar words today.", "Reading was a clear strength this lesson."] },
       4: { 1: ["Read fluently and picked up on subtle nuance.", "Excellent comprehension of today's material.", "Read like a genuinely confident reader."], 2: ["Read fluently through the entire passage today.", "Comprehension was excellent across all the material.", "Picked up on subtle details while reading."], 3: ["Today's reading was genuinely impressive from start to finish.", "Handled challenging vocabulary with real ease.", "This was an excellent lesson for reading fluency."] },
+    },
+    readingComprehension: {
+      1: { 1: ["Placeholder reading comprehension phrase 1 (level 1, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 1, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 1, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 1, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 1, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 1, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 1, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 1, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 1, set 3) — real content coming soon."] },
+      2: { 1: ["Placeholder reading comprehension phrase 1 (level 2, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 2, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 2, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 2, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 2, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 2, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 2, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 2, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 2, set 3) — real content coming soon."] },
+      3: { 1: ["Placeholder reading comprehension phrase 1 (level 3, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 3, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 3, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 3, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 3, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 3, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 3, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 3, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 3, set 3) — real content coming soon."] },
+      4: { 1: ["Placeholder reading comprehension phrase 1 (level 4, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 4, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 4, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 4, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 4, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 4, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 4, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 4, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 4, set 3) — real content coming soon."] },
     },
     vocabulary: {
       1: { 1: ["Vocabulary's pretty limited right now and needs more exposure.", "Struggled to recall recently learned words today.", "Needs more repetition to build up vocabulary."], 2: ["Vocabulary range is still fairly limited right now.", "Needed a lot of help recalling recent words.", "Vocabulary needs considerably more repetition and exposure."], 3: ["Struggled to recall most of today's target words.", "Needed frequent reminders of recently taught vocabulary.", "Vocabulary remains an area needing real focus."] },
@@ -194,11 +220,23 @@ const PHRASE_VARIANTS = {
       3: { 1: ["Followed most spoken content well today.", "Understood instructions quickly with little repetition needed.", "Picked up on spoken details well throughout the lesson."], 2: ["Followed spoken content competently throughout the session.", "Comprehension was solid across the majority of material.", "Picked up on finer details without repetition."], 3: ["Comprehension remained strong even with accelerated speech.", "Rarely required repetition of spoken input today.", "Listening was a clear strength during this session."] },
       4: { 1: ["Understood spoken English with ease today.", "Followed fast, natural speech without any trouble.", "Excellent listening comprehension throughout the lesson."], 2: ["Comprehension was complete with no repetition required.", "Listening performance was effectively flawless this session.", "Picked up on subtle nuance throughout the conversation."], 3: ["Listening performance today was genuinely outstanding throughout.", "Processed rapid, natural speech without difficulty.", "This was an excellent session for auditory comprehension."] },
     },
+    listeningComprehension: {
+      1: { 1: ["Placeholder listening comprehension phrase 1 (level 1, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 1, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 1, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 1, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 1, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 1, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 1, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 1, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 1, set 3) — real content coming soon."] },
+      2: { 1: ["Placeholder listening comprehension phrase 1 (level 2, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 2, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 2, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 2, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 2, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 2, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 2, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 2, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 2, set 3) — real content coming soon."] },
+      3: { 1: ["Placeholder listening comprehension phrase 1 (level 3, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 3, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 3, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 3, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 3, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 3, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 3, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 3, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 3, set 3) — real content coming soon."] },
+      4: { 1: ["Placeholder listening comprehension phrase 1 (level 4, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 4, set 1) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 4, set 1) — real content coming soon."], 2: ["Placeholder listening comprehension phrase 1 (level 4, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 4, set 2) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 4, set 2) — real content coming soon."], 3: ["Placeholder listening comprehension phrase 1 (level 4, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 2 (level 4, set 3) — real content coming soon.", "Placeholder listening comprehension phrase 3 (level 4, set 3) — real content coming soon."] },
+    },
     reading: {
       1: { 1: ["Needs support decoding new words while reading.", "Reading is still slow and needs a lot of help.", "Struggles to sound out unfamiliar words."], 2: ["Reading fluency remains limited at this stage.", "Required significant support decoding today's material.", "Reading comprehension needs considerably more development."], 3: ["Struggled through the majority of today's passage.", "Required frequent assistance with unfamiliar vocabulary.", "Reading remains an area requiring focused attention."] },
       2: { 1: ["Reading is improving with regular practice.", "Managed most of the passage with some help.", "Getting better at sounding out new words."], 2: ["Reading fluency is gradually developing.", "Handling increasingly more text independently.", "Required less assistance than previous sessions."], 3: ["Managed most of the passage with minimal support.", "Reading comprehension shows noticeable improvement.", "Handled today's material reasonably competently overall."] },
       3: { 1: ["Read confidently with good comprehension today.", "Handled today's passage well with minimal help.", "Good reading fluency and understanding throughout."], 2: ["Read confidently through the majority of today's material.", "Comprehension was solid across the entire passage.", "Handled today's text with good accuracy overall."], 3: ["Handled today's passage with genuine confidence.", "Rarely required assistance with unfamiliar vocabulary today.", "Reading was a clear strength during this session."] },
       4: { 1: ["Read fluently and picked up on subtle nuance.", "Excellent comprehension of today's reading material.", "Read naturally, like a confident reader."], 2: ["Read fluently through the entirety of today's passage.", "Comprehension was excellent across all material covered.", "Picked up on subtle detail and nuance while reading."], 3: ["Today's reading performance was genuinely impressive throughout.", "Handled challenging vocabulary with notable ease.", "This was an excellent session for reading fluency."] },
+    },
+    readingComprehension: {
+      1: { 1: ["Placeholder reading comprehension phrase 1 (level 1, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 1, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 1, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 1, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 1, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 1, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 1, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 1, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 1, set 3) — real content coming soon."] },
+      2: { 1: ["Placeholder reading comprehension phrase 1 (level 2, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 2, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 2, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 2, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 2, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 2, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 2, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 2, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 2, set 3) — real content coming soon."] },
+      3: { 1: ["Placeholder reading comprehension phrase 1 (level 3, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 3, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 3, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 3, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 3, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 3, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 3, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 3, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 3, set 3) — real content coming soon."] },
+      4: { 1: ["Placeholder reading comprehension phrase 1 (level 4, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 4, set 1) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 4, set 1) — real content coming soon."], 2: ["Placeholder reading comprehension phrase 1 (level 4, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 4, set 2) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 4, set 2) — real content coming soon."], 3: ["Placeholder reading comprehension phrase 1 (level 4, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 2 (level 4, set 3) — real content coming soon.", "Placeholder reading comprehension phrase 3 (level 4, set 3) — real content coming soon."] },
     },
     vocabulary: {
       1: { 1: ["Vocabulary is limited and needs more exposure to new words.", "Struggled to recall recently learned words today.", "Needs more repetition to build vocabulary."], 2: ["Vocabulary range remains fairly limited at this stage.", "Required significant support recalling recently taught terms.", "Vocabulary needs considerably more repetition and exposure."], 3: ["Struggled to recall the majority of target vocabulary.", "Required frequent reminders of recently introduced terms.", "Vocabulary remains an area requiring focused attention."] },
@@ -251,7 +289,7 @@ const LEVEL_SUFFIX = { beginner: ' Every small step counts!', intermediate: ' St
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-function autoGenerateComment(level, ageGroup, levelBucket, commentSet) {
+function autoGenerateComment(levels, ageGroup, levelBucket, commentSet) {
   const style = AGE_STYLE[ageGroup] || AGE_STYLE.adult;
   const opener = pick(style.opener);
   const closer = pick(style.closer) + (LEVEL_SUFFIX[levelBucket] || '');
@@ -259,7 +297,7 @@ function autoGenerateComment(level, ageGroup, levelBucket, commentSet) {
   const chosen = shuffled.slice(0, 3);
   const sentences = chosen.map((sk) => {
     const setToUse = commentSet || Math.ceil(Math.random() * 3); // random set each time if none picked
-    return pick(PHRASE_VARIANTS[ageGroup || 'adult'][sk.key][level][setToUse]);
+    return pick(PHRASE_VARIANTS[ageGroup || 'adult'][sk.key][levels[sk.key]][setToUse]);
   });
   return `${opener} ${sentences.join(' ')} ${closer}`;
 }
@@ -1669,14 +1707,18 @@ function SlotModal({ ctx, isTeacher, isRep, myStudentId, companyStudents, displa
 /* ---------------- Feedback modal ---------------- */
 
 function emptyFeedback() {
+  const perSkillLevel3 = {};
+  const perSkillIndex0 = {};
+  const perSkillNullPhrase = {};
+  SKILLS.forEach((sk) => { perSkillLevel3[sk.key] = 3; perSkillIndex0[sk.key] = 0; perSkillNullPhrase[sk.key] = null; });
   return {
     todayLesson: '', nextLesson: '',
     vocab: ['', '', '', '', '', ''],
     corrections: [{ wrong: '', correct: '' }, { wrong: '', correct: '' }, { wrong: '', correct: '' }],
-    level: 3,
+    levels: perSkillLevel3,
     commentSet: 1,
-    phraseChoice: { speaking: 0, listening: 0, reading: 0, vocabulary: 0, grammar: 0, pronunciation: 0, engagement: 0 },
-    addedPhrase: { speaking: null, listening: null, reading: null, vocabulary: null, grammar: null, pronunciation: null, engagement: null },
+    phraseChoice: perSkillIndex0,
+    addedPhrase: perSkillNullPhrase,
     comment: '',
   };
 }
@@ -1703,57 +1745,23 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
   const [fb, setFb] = useState(() => ({ ...emptyFeedback(), ageGroup: student?.ageGroup || 'adult', ...(entry?.feedback || {}) }));
   const [finalText, setFinalText] = useState(entry?.feedback?.finalText || '');
   const [copied, setCopied] = useState(false);
-  const [notesText, setNotesText] = useState('');
-  const [notesLoading, setNotesLoading] = useState(false);
-  const [notesError, setNotesError] = useState('');
 
   if (!entry) return null;
-
-  const fillFromNotes = async () => {
-    setNotesError('');
-    if (!notesText.trim()) { setNotesError('Paste your notes for this student first.'); return; }
-    setNotesLoading(true);
-    try {
-      const res = await fetch('/api/parse-notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-app-secret': import.meta.env.VITE_APP_SECRET || '' },
-        body: JSON.stringify({ notes: notesText }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setNotesError(data.error || 'Something went wrong — please fill the form manually.'); return; }
-      setFb((p) => {
-        const vocab = data.vocab && data.vocab.length ? Array.from({ length: Math.max(6, data.vocab.length) }, (_, i) => data.vocab[i] || '') : p.vocab;
-        const corrections = data.corrections && data.corrections.length
-          ? (data.corrections.length >= 3 ? data.corrections : [...data.corrections, ...Array(3 - data.corrections.length).fill({ wrong: '', correct: '' })])
-          : p.corrections;
-        return {
-          ...p,
-          todayLesson: data.todayLesson || p.todayLesson,
-          nextLesson: data.nextLesson || p.nextLesson,
-          vocab,
-          corrections,
-        };
-      });
-    } catch (e) {
-      setNotesError('Could not reach the parsing service — please fill the form manually.');
-    } finally {
-      setNotesLoading(false);
-    }
-  };
 
   const setVocab = (i, val) => setFb((p) => ({ ...p, vocab: p.vocab.map((v, idx) => (idx === i ? val : v)) }));
   const addVocab = () => setFb((p) => ({ ...p, vocab: [...p.vocab, ''] }));
   const setCorrection = (i, key, val) => setFb((p) => ({ ...p, corrections: p.corrections.map((c, idx) => (idx === i ? { ...c, [key]: val } : c)) }));
   const addCorrection = () => setFb((p) => ({ ...p, corrections: [...p.corrections, { wrong: '', correct: '' }] }));
-  const setLevel = (val) => setFb((p) => ({ ...p, level: val }));
+  const setSkillLevel = (key, val) => setFb((p) => ({ ...p, levels: { ...p.levels, [key]: val }, phraseChoice: { ...p.phraseChoice, [key]: 0 } }));
   const setAgeGroup = (val) => setFb((p) => ({ ...p, ageGroup: val }));
-  const setCommentSet = (val) => setFb((p) => ({
-    ...p, commentSet: val,
-    phraseChoice: { speaking: 0, listening: 0, reading: 0, vocabulary: 0, grammar: 0, pronunciation: 0, engagement: 0 },
-  }));
+  const setCommentSet = (val) => setFb((p) => {
+    const resetChoice = {};
+    SKILLS.forEach((sk) => { resetChoice[sk.key] = 0; });
+    return { ...p, commentSet: val, phraseChoice: resetChoice };
+  });
   const setPhraseChoice = (key, idx) => setFb((p) => ({ ...p, phraseChoice: { ...p.phraseChoice, [key]: idx } }));
   const addPhrase = (key) => setFb((p) => {
-    const chosenText = PHRASE_VARIANTS[p.ageGroup || 'adult'][key][p.level][p.commentSet || 1][p.phraseChoice[key]];
+    const chosenText = PHRASE_VARIANTS[p.ageGroup || 'adult'][key][p.levels[key]][p.commentSet || 1][p.phraseChoice[key]];
     const prevText = p.addedPhrase[key];
     let comment = p.comment;
     if (prevText) comment = comment.replace(prevText, '').replace(/  +/g, ' ').trim();
@@ -1768,7 +1776,7 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
   });
 
   const finalize = () => setFinalText(buildFinalText(entry, student, fb));
-  const regenerateComment = () => setFb((p) => ({ ...p, comment: autoGenerateComment(p.level, p.ageGroup || 'adult', levelBucket, p.commentSet) }));
+  const regenerateComment = () => setFb((p) => ({ ...p, comment: autoGenerateComment(p.levels, p.ageGroup || 'adult', levelBucket, p.commentSet) }));
   const copy = async () => { try { await navigator.clipboard.writeText(finalText); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {} };
   const save = () => onSave({ ...fb, finalText: finalText || buildFinalText(entry, student, fb) });
 
@@ -1799,17 +1807,6 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
         <button onClick={onClose} className="rounded-md p-1.5 shrink-0" style={{ color: MUTED, border: `1px solid ${BORDER}` }} title="Close">
           <X size={16} />
         </button>
-      </div>
-
-      <div className="mb-4 rounded-xl p-3" style={{ backgroundColor: PAPER_LIGHT, border: `1px solid ${BORDER}` }}>
-        <div className="text-xs uppercase tracking-wide mb-2" style={{ color: MUTED }}>Fill from notes (optional)</div>
-        <textarea value={notesText} onChange={(e) => setNotesText(e.target.value)} rows={3} placeholder="Paste this student's raw shorthand notes here…"
-          className="w-full rounded-md px-2 py-1.5 text-sm outline-none mb-2" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }} />
-        <div className="flex items-center gap-2 flex-wrap">
-          <Btn variant="accent" onClick={fillFromNotes} disabled={notesLoading}><Sparkles size={14} /> {notesLoading ? 'Reading notes…' : 'Fill form from notes'}</Btn>
-          <span className="text-xs" style={{ color: MUTED }}>Fills Today's lesson, Next lesson, Vocab, and Corrections below — review everything before saving.</span>
-        </div>
-        {notesError && <p className="text-xs mt-2" style={{ color: RED }}>{notesError}</p>}
       </div>
 
       <div className="grid sm:grid-cols-2 gap-3 mb-4">
@@ -1853,14 +1850,8 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
       </div>
 
       <div className="mb-4">
-        <div className="text-xs uppercase tracking-wide mb-2" style={{ color: MUTED }}>Overall lesson level</div>
-        <div className="grid sm:grid-cols-3 gap-3">
-          <div>
-            <div className="text-xs mb-1" style={{ color: MUTED }}>Performance this lesson</div>
-            <select value={fb.level} onChange={(e) => setLevel(Number(e.target.value))} className="w-full rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }}>
-              {[4, 3, 2, 1].map((tier) => <option key={tier} value={tier}>{TIER_LABELS[tier]}</option>)}
-            </select>
-          </div>
+        <div className="text-xs uppercase tracking-wide mb-2" style={{ color: MUTED }}>Lesson-wide settings</div>
+        <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <div className="text-xs mb-1" style={{ color: MUTED }}>Age bracket (used for feedback tone)</div>
             <select value={fb.ageGroup || 'adult'} onChange={(e) => setAgeGroup(e.target.value)} className="w-full rounded-md px-2 py-1.5 text-sm outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }}>
@@ -1880,13 +1871,16 @@ function FeedbackModal({ entry, student, onClose, onSave, readOnly, levelBucket 
       </div>
 
       <div className="mb-4">
-        <div className="text-xs uppercase tracking-wide mb-2" style={{ color: MUTED }}>Performance in this lesson — options below match the Age bracket + Set you picked above; pick a phrasing per skill, then add it to the comment</div>
+        <div className="text-xs uppercase tracking-wide mb-2" style={{ color: MUTED }}>Performance in this lesson — set each skill's own level, pick a phrasing, then add it to the comment</div>
         <div className="space-y-2">
           {SKILLS.map((sk) => (
             <div key={sk.key} className="flex items-center gap-2 flex-wrap">
               <div className="text-xs w-32 shrink-0" style={{ color: MUTED }}>{sk.en}</div>
+              <select value={fb.levels[sk.key]} onChange={(e) => setSkillLevel(sk.key, Number(e.target.value))} className="rounded-md px-2 py-1.5 text-xs outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT }}>
+                {[4, 3, 2, 1].map((tier) => <option key={tier} value={tier}>{TIER_LABELS[tier]}</option>)}
+              </select>
               <select value={fb.phraseChoice[sk.key]} onChange={(e) => setPhraseChoice(sk.key, Number(e.target.value))} className="flex-1 rounded-md px-2 py-1.5 text-xs outline-none" style={{ backgroundColor: INK, border: `1px solid ${BORDER}`, color: TEXT, minWidth: '12rem' }}>
-                {PHRASE_VARIANTS[fb.ageGroup || 'adult'][sk.key][fb.level][fb.commentSet || 1].map((phrase, idx) => <option key={idx} value={idx}>{phrase}</option>)}
+                {PHRASE_VARIANTS[fb.ageGroup || 'adult'][sk.key][fb.levels[sk.key]][fb.commentSet || 1].map((phrase, idx) => <option key={idx} value={idx}>{phrase}</option>)}
               </select>
               <Btn onClick={() => addPhrase(sk.key)}><Plus size={12} /> Add</Btn>
               <Btn variant="danger" onClick={() => removePhrase(sk.key)} disabled={!fb.addedPhrase[sk.key]}><X size={12} /> Remove</Btn>
